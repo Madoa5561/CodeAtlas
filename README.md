@@ -1,66 +1,87 @@
-<<<<<<< HEAD
 # CodeAtlas
 
-GitHub リポジトリを解析し、根拠付きの回答を Discord Forum などへ返すことを目指す OSS の Code Intelligence Platform です。
+CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き回答をDiscord Forumなどへ返すことを目指すOSSのCode Intelligence Platformです。
 
 > [!IMPORTANT]
-> 現在は設計および Python プロジェクトの初期化段階です。Discord Bot、リポジトリ解析、検索、LLM 接続は未実装です。
-
-## Vision
-
-- 複数リポジトリのコード、シンボル、依存関係、Git 履歴を横断して調査する
-- 回答に commit SHA、ファイル、行番号、検索方法、確信度を添える
-- Discord に依存しない解析コアを CLI、Web API、MCP Server などから再利用する
-- リポジトリ内の内容を信頼できない入力として扱い、読み取り専用を既定にする
+> 現在はM1「OSS/開発基盤」まで実装済みです。Repository解析、Discord Bot、LLM接続、Tree-sitter、Qdrant接続は未実装です。
 
 ## Status
 
 | 項目 | 状態 |
 | --- | --- |
-| 要求分析、アーキテクチャ、Threat Model | 設計済み |
-| Python パッケージ骨格 | 初期化済み |
-| Repository Provider、索引、Hybrid Retrieval | 未実装 |
-| Agent Pipeline、Knowledge Graph、Plugin/Event System | 設計済み、未実装 |
-| Model Provider、Agent Pipeline | 未実装 |
-| Discord / API / CLI | 未実装 |
+| 要求分析、アーキテクチャ、Threat Model、ADR | 設計済み |
+| Python package、設定、構造化logging、例外 | 実装済み |
+| Plugin Registry、bootstrap、lifecycle | M1最小契約を実装済み |
+| pytest、Ruff、mypy、coverage、package build、CI | 整備済み |
+| Docker foundation process、ComposeのQdrant定義 | 整備済み、Qdrant接続は未実装 |
+| Repository解析、索引、Hybrid Retrieval | 未実装 |
+| Agent Pipeline、Model Provider、Discord/API/CLI | 未実装 |
 
-詳細は [ロードマップ](docs/ROADMAP.md) を参照してください。
+詳細は[ロードマップ](docs/ROADMAP.md)を参照してください。
 
 ## Architecture
 
-Ports and Adapters を採用し、Domain/Application Core を UI、GitHub、DB、LLM から分離します。Agent は Planner、Retriever、Evidence Ranker、Reasoner、Response Composer に分かれ、TypeScript、Thrift、Git History、Call Graph、Dependency Graphを横断する Knowledge Graph を利用します。
+Ports and Adaptersを採用し、Domain/Application CoreをUI、GitHub、DB、LLMから分離します。将来のAgentはPlanner、Retriever、Evidence Ranker、Reasoner、Response Composerに分かれます。
 
-- [要求分析](docs/REQUIREMENT_ANALYSIS.md)
 - [アーキテクチャ](docs/ARCHITECTURE.md)
-- [不足仕様](docs/OPEN_QUESTIONS.md)
-- [リスクと Threat Model](docs/RISKS.md)
 - [Knowledge Graph](docs/KNOWLEDGE_GRAPH.md)
 - [Plugin/Event System](docs/PLUGINS_AND_EVENTS.md)
-- [設計レビュー](docs/DESIGN_REVIEW.md)
-- [ADR 一覧](docs/adr/README.md)
+- [リスクとThreat Model](docs/RISKS.md)
+- [ADR一覧](docs/adr/README.md)
 
-## Development
+## Quick Start
 
-前提は Python 3.12 以上です。現段階では実行時の外部依存関係はありません。
+Python 3.12以上が必要です。
 
 ```powershell
-python -m pip install -e .
-python -m unittest discover -s tests
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]" -c constraints\py312.txt
+python -m pytest
 ```
 
-正式な開発用依存関係と Ruff、mypy、pytest の導入は基盤マイルストーンで行います。
+Linux/macOSではactivateだけが異なります。
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]" -c constraints/py312.txt
+python -m pytest
+```
+
+設定例は`.env.example`にあります。`.env`はGit管理対象外です。現在のservice processは外部接続を行わず、停止signalを待つfoundation lifecycleのみです。
+
+## Quality Commands
+
+```powershell
+python -m pytest
+python -m coverage run -m pytest
+python -m coverage report
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m build
+```
+
+詳細は[開発ガイド](docs/DEVELOPMENT.md)を参照してください。
+
+## Docker
+
+```powershell
+docker compose up --build -d codeatlas
+docker compose --profile qdrant up --build -d
+```
+
+Qdrantを起動しても、M1のCodeAtlasはまだ接続しません。詳細は[デプロイ](docs/DEPLOYMENT.md)を参照してください。
 
 ## Security
 
-任意コマンド実行、任意ファイル書き込み、リポジトリへの変更を Tool として公開しません。正式な `SECURITY.md` はプロジェクト基盤フェーズで追加予定です。公開前は Issue に秘密情報を投稿しないでください。
+任意shell実行、repository書き込み、外部service接続はM1にありません。秘密情報をIssueへ投稿しないでください。脆弱性はGitHubのPrivate vulnerability reportingから報告してください。詳細は[SECURITY.md](SECURITY.md)を参照してください。
 
 ## Contributing
 
-コントリビューション手順、行動規範、ライセンスファイルはプロジェクト基盤フェーズで整備予定です。現段階では設計レビューを優先します。
+[CONTRIBUTING.md](CONTRIBUTING.md)と[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)を確認してください。
 
 ## License
 
-Apache License 2.0 を採用予定です。正式な `LICENSE` ファイルが追加されるまで配布可能なリリースではありません。
-=======
-# linejs-code-assistant
->>>>>>> 7a485a2ec5d817e27efb055a9d4e2f2751ff61c9
+Apache License 2.0です。[LICENSE](LICENSE)を参照してください。

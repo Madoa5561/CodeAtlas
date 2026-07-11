@@ -1,6 +1,6 @@
 # 開発ロードマップ
 
-## M0: 分析と初期化（今回）
+## M0: 分析と初期化（完了）
 
 - 要求分析、不足仕様、Threat Model、アーキテクチャ、Tool 契約、ADR
 - Agent Pipeline、Unified Knowledge Graph、Plugin/Event/Interaction設計
@@ -9,11 +9,12 @@
 
 完了条件: 文書整合、package import、標準テスト成功。
 
-## M1: OSS/開発基盤
+## M1: OSS/開発基盤（完了）
 
 - License、Contributing、Code of Conduct、Security、Support、Changelog
 - Pydantic Settings、structlog、例外 taxonomy
 - pytest、Ruff、mypy、CI、Dockerfile/Compose、dependency lock
+- Plugin Manifest/RegistryとComposition Rootの最小契約
 
 完了条件: clean checkout から lint/type/test が再現可能。
 

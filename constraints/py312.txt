@@ -1,0 +1,22 @@
+annotated-types==0.7.0
+build==1.2.2.post1
+colorama==0.4.6 ; platform_system == "Windows"
+coverage==7.6.10
+iniconfig==2.0.0
+mypy==1.14.1
+mypy-extensions==1.0.0
+packaging==24.2
+pathspec==0.12.1
+pluggy==1.5.0
+pydantic==2.10.3
+pydantic-core==2.27.1
+pydantic-settings==2.7.1
+pyproject-hooks==1.2.0
+pytest==8.3.4
+pytest-asyncio==0.25.2
+python-dotenv==1.0.1
+ruff==0.9.3
+setuptools==75.8.0
+structlog==24.4.0
+typing-extensions==4.16.0
+wheel==0.45.1

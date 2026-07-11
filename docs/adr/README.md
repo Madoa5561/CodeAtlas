@@ -10,7 +10,7 @@
 | 0006 | Proposed | SQLite FTS5 と BM25 ライブラリ |
 | 0007 | Proposed | Git CLI と GitPython |
 | 0008 | Proposed | Tree-sitter/Thrift grammar |
-| 0009 | Proposed | dependency/lock/package manager |
+| [0009](0009-python-dependency-management.md) | Accepted | venv、pip、constraintsによる依存管理 |
 | 0010 | Proposed | job queue と process coordination |
 | [0011](0011-agent-pipeline.md) | Accepted | Agentを5つの責務へ分離 |
 | [0012](0012-unified-knowledge-graph.md) | Accepted | 横断Unified Knowledge Graph |

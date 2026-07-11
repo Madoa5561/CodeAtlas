@@ -1,0 +1,33 @@
+name: codeatlas
+
+services:
+  codeatlas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      CODEATLAS_APPLICATION__ENVIRONMENT: production
+      CODEATLAS_LOGGING__FORMAT: json
+      CODEATLAS_DATABASE__URL: sqlite:////app/data/codeatlas.db
+      CODEATLAS_QDRANT__ENABLED: "false"
+      CODEATLAS_QDRANT__URL: http://qdrant:6333
+    volumes:
+      - codeatlas-data:/app/data
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.5
+    profiles: ["qdrant"]
+    volumes:
+      - qdrant-data:/qdrant/storage
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  codeatlas-data:
+  qdrant-data:
