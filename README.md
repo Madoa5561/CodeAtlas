@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CodeAtlas
 
 GitHub リポジトリを解析し、根拠付きの回答を Discord Forum などへ返すことを目指す OSS の Code Intelligence Platform です。
@@ -60,3 +61,6 @@ python -m unittest discover -s tests
 ## License
 
 Apache License 2.0 を採用予定です。正式な `LICENSE` ファイルが追加されるまで配布可能なリリースではありません。
+=======
+# linejs-code-assistant
+>>>>>>> 7a485a2ec5d817e27efb055a9d4e2f2751ff61c9
