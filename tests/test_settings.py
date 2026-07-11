@@ -41,8 +41,27 @@ def test_environment_prefix_and_nested_delimiter(monkeypatch: pytest.MonkeyPatch
     assert settings.indexing.max_concurrency == 7
 
 
+def test_plugin_allowlist_preserves_unset_empty_and_ids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Settings preserve all three allowlist policy states."""
+    assert CodeAtlasSettings(_env_file=None).security.plugin_allowlist is None
+
+    monkeypatch.setenv("CODEATLAS_SECURITY__PLUGIN_ALLOWLIST", "[]")
+    assert CodeAtlasSettings(_env_file=None).security.plugin_allowlist == ()
+
+    monkeypatch.setenv(
+        "CODEATLAS_SECURITY__PLUGIN_ALLOWLIST",
+        '["example.allowed"]',
+    )
+    assert CodeAtlasSettings(_env_file=None).security.plugin_allowlist == ("example.allowed",)
+
+
 def test_env_example_covers_root_setting_sections() -> None:
-    """The example dotenv file documents every root settings section."""
+    """The example dotenv file documents every section and can be loaded as-is."""
     example = Path(".env.example").read_text(encoding="utf-8")
     for section in CodeAtlasSettings.model_fields:
         assert f"CODEATLAS_{section.upper()}__" in example
+    settings = CodeAtlasSettings(_env_file=".env.example")
+    assert settings.discord.enabled is False
+    assert settings.ollama.enabled is False

@@ -115,7 +115,7 @@ class GitHubSettings(BaseModel):
 class SecuritySettings(BaseModel):
     """Security defaults applied by future adapters."""
 
-    plugin_allowlist: tuple[str, ...] = ()
+    plugin_allowlist: tuple[str, ...] | None = None
     allow_repository_writes: bool = False
     max_http_response_bytes: int = Field(default=2_000_000, ge=1_024, le=20_000_000)
 

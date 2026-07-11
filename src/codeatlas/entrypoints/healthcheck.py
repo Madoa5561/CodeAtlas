@@ -1,11 +1,12 @@
-"""Local configuration healthcheck used by container orchestration."""
+"""Process readiness healthcheck used by container orchestration."""
 
-from codeatlas.bootstrap import create_application
+from codeatlas.infrastructure.health import is_process_ready
 
 
 def main() -> None:
-    """Validate that the M1 application container can be composed."""
-    create_application()
+    """Exit unsuccessfully unless the started service process is alive."""
+    if not is_process_ready():
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

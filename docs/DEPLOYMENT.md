@@ -14,7 +14,7 @@ docker compose logs codeatlas
 docker compose down
 ```
 
-imageはUID/GID 10001の非root userで動き、source codeをhost mountしない。SQLite将来利用向けに`codeatlas-data` volumeを`/app/data`へmountする。healthcheckはsettingsとcomposition rootの構築だけを検証する。
+imageはUID/GID 10001の非root userで動き、source codeをhost mountしない。SQLite将来利用向けに`codeatlas-data` volumeを`/app/data`へmountする。healthcheckは起動完了時に公開されたPIDの生存状態を検証する。
 
 Qdrant定義は任意profileに隔離される。
 
@@ -37,4 +37,4 @@ M1のCodeAtlasはQdrantへ接続しない。profileの起動は将来構成のco
 
 ## Shutdown
 
-SIGTERM/SIGINTでPlugin lifecycleを逆順停止する。shutdown timeout設定は定義済みだが、強制deadline適用は外部resourceを持つplugin実装時に追加する。
+SIGTERM/SIGINTでPlugin lifecycleを逆順停止する。shutdown timeoutを超えた場合は停止処理をcancelしてprocessを非zero終了させ、container orchestratorへ失敗を通知する。

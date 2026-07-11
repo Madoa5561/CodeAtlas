@@ -35,4 +35,10 @@ Discord、GitHub、Ollama、Qdrantは`ENABLED=false`ならcredentialなしで起
 
 ## Plugin Allowlist
 
-`CODEATLAS_SECURITY__PLUGIN_ALLOWLIST`はJSON配列で指定する。空配列は、composition rootへ明示的に渡されたpluginを許可する。非空の場合、列挙されたplugin IDだけを登録できる。repositoryや任意pathからpluginをloadする機能はない。
+`CODEATLAS_SECURITY__PLUGIN_ALLOWLIST`は次の三状態を持つ。
+
+- 未設定: Manifestで`built_in`と明示されたpluginだけを許可する。
+- 空配列`[]`: built-inを含むすべてのpluginを拒否する。
+- plugin ID配列: 列挙されたIDだけを許可する。
+
+Manifestのorigin既定値は`third_party`であり、第三者pluginが暗黙にbuilt-inになることはない。repositoryや任意pathからpluginをloadする機能はない。

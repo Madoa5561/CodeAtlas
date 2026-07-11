@@ -4,9 +4,17 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from enum import StrEnum
 
 _IDENTIFIER = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$")
 _SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
+
+
+class PluginOrigin(StrEnum):
+    """Trusted origin classification used by the default allowlist policy."""
+
+    BUILT_IN = "built_in"
+    THIRD_PARTY = "third_party"
 
 
 def parse_version(value: str) -> tuple[int, int, int]:
@@ -47,6 +55,7 @@ class PluginManifest:
     api_version_min: str
     api_version_max: str
     capabilities: tuple[PluginCapability, ...] = ()
+    origin: PluginOrigin = PluginOrigin.THIRD_PARTY
 
     def __post_init__(self) -> None:
         if _IDENTIFIER.fullmatch(self.plugin_id) is None:

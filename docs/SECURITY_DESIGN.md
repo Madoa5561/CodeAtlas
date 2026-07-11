@@ -16,7 +16,7 @@ M1は外部network、repository、Discord、LLM、Qdrantへ接続しない。主
 
 structlogと標準loggingを`ProcessorFormatter`で統合する。timestamp、level、logger、eventを出力し、contextvarsでrequest/correlation IDを追加できる。
 
-key名にtoken、password、secret、authorization、api_keyを含む値はnested mappingを含めて`[REDACTED]`へ置換する。Repository本文や会話全文をlog APIへ渡さないことが第一防御であり、redactionだけに依存しない。
+key名にtoken、password、secret、authorization、api_keyを含む値、credential形式の文字列、`SecretStr`は、list/tupleを含むnested構造でも`[REDACTED]`へ置換する。Repository本文や会話全文をlog APIへ渡さないことが第一防御であり、redactionだけに依存しない。
 
 redactionはkey-basedであり、自由文message内のsecretを検出するDLPではない。secretをmessageへ連結してはならない。
 
@@ -27,6 +27,8 @@ redactionはkey-basedであり、自由文message内のsecretを検出するDLP�
 ## Plugins
 
 - pluginはcomposition rootへ明示的に渡された信頼済みPython objectだけを登録する。
+- allowlist未設定時は明示的なbuilt-inだけ、空配列では何も許可せず、ID配列では列挙pluginだけを許可する。
+- Manifest originの既定値は`third_party`とし、built-inは明示を必須にする。
 - semantic version互換性、allowlist、plugin ID、capability競合を起動前に検証する。
 - start失敗時は起動済みpluginを逆順rollbackする。
 - 自動download、任意path import、hot reloadは実装しない。
