@@ -18,6 +18,10 @@ class InMemoryRepositoryRegistry:
         existing_id = self._by_canonical_key.get(canonical_key)
         if existing_id is not None:
             return self._by_id[existing_id]
+        existing = self._by_id.get(descriptor.repository_id)
+        if existing is not None:
+            self._by_canonical_key[canonical_key] = descriptor.repository_id
+            return existing
         self._by_id[descriptor.repository_id] = descriptor
         self._by_canonical_key[canonical_key] = descriptor.repository_id
         return descriptor

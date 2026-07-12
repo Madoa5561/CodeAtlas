@@ -13,7 +13,7 @@ Use the configured `git` or `git.exe` executable through `asyncio.create_subproc
 
 `check-attr` is added beyond the original minimum to evaluate the commit-pinned `.gitattributes` `diff` attribute before returning file/search/diff content.
 
-The runner always uses argv arrays, disabled stdin, timeout, streaming stdout/stderr limits, minimal environment, literal pathspecs, no pager, no optional locks, no external diff, no global/system config, and no terminal prompts. Return codes and stderr become internal causes of safe CodeAtlas errors; stderr is never a public message.
+The runner always uses argv arrays, disabled stdin, timeout, streaming stdout/stderr limits, minimal environment, literal pathspecs, no pager, no optional locks, no external diff, no global/system config or attributes, no hooks, no filesystem monitor, no credential helper, and no terminal prompts. Return codes and stderr become internal causes of safe CodeAtlas errors; stderr is never a public message. Revision input is restricted to branch, tag, `HEAD`, or SHA syntax before it reaches Git; repository paths are placed after `--`.
 
 ## Consequences
 

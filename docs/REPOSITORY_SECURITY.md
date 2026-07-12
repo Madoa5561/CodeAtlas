@@ -10,7 +10,7 @@ Public operations use typed POSIX-relative `RepositoryPath` values. Absolute, dr
 
 ## Content Policy
 
-The provider excludes `.env*`, credential filenames, private-key extensions/headers, common credential assignments, dependency/build directories, archives, media, executables, databases, and binary extensions. Binary checks combine commit-pinned Git attributes, NUL detection, extension denylist, control-byte sampling, and strict UTF-8/BOM decoding.
+The provider excludes `.env*`, credential filenames, private-key extensions/headers, common credential assignments, dependency/build directories, archives, media, executables, databases, and binary extensions. Binary checks combine SHA-selected Git attributes, NUL detection, extension denylist, control-byte sampling, and strict UTF-8/BOM decoding. System/global attribute files are disabled; repository-local metadata can only contribute a conservative rejection and cannot bypass the independent content checks.
 
 This is a basic leak-prevention layer, not complete DLP. False positives and false negatives remain possible. Rejected content is represented only by safe errors or aggregate warnings; content and Git stderr are not public messages or logs.
 
@@ -20,8 +20,10 @@ Defaults are 2 GiB per repository, 1 MiB per text/search file, 1,000 directory e
 
 ## Search Snapshot
 
-Only eligible commit blobs enter an OS temporary directory with an unpredictable name. No `.git` metadata, symlink, submodule, secret candidate, binary, or working-tree change is copied. ripgrep and fallback operate on the same snapshot, which is cleaned on every exit path.
+Only eligible commit blobs enter an OS temporary directory with an unpredictable name and owner-restricted permissions where supported. No `.git` metadata, symlink, submodule, secret candidate, binary, or working-tree change is copied. Unicode-normalized and case-insensitive path collisions are rejected before an existing snapshot file can be overwritten. ripgrep and the fixed-string fallback operate on the same snapshot, which is cleaned on every exit path. Cleanup failures become safe repository errors without exposing the temporary absolute path.
+
+ripgrep is the only M2 regex engine. When ripgrep is unavailable, fixed-string and case-sensitive/insensitive search remain available through the standard-library fallback, but regex search fails safely. This avoids running an unbounded backtracking regular expression in the application event loop and avoids claiming incompatible regex semantics.
 
 ## Residual Risks
 
-Path/content rules are intentionally conservative. Repository-size calculation can be expensive for very large local repositories. PID/cancellation and process-tree behavior can vary by OS. Windows directory symlink tests require developer-mode or elevated privileges; Git object symlink rejection remains covered without that privilege.
+Path/content rules are intentionally conservative. Repository-size calculation can be expensive for very large local repositories. PID/cancellation and process-tree behavior can vary by OS; M2 disables known child-process paths but does not yet use a Windows Job Object. Windows directory symlink tests require developer-mode or elevated privileges; Git object symlink rejection remains covered without that privilege.

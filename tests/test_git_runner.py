@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 
 import pytest
@@ -106,7 +107,7 @@ async def test_fixed_git_controls_are_passed(
     git_repository: GitRepositoryFixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Pager, optional locks, literal pathspecs, external diff, and stdin are controlled."""
+    """Pager, config hooks, attributes, external diff, and stdin are controlled."""
     captured_arguments: tuple[object, ...] = ()
     captured_keywords: dict[str, object] = {}
     original = asyncio.create_subprocess_exec
@@ -126,6 +127,9 @@ async def test_fixed_git_controls_are_passed(
         "--literal-pathspecs",
     )
     assert "diff.external=" in captured_arguments
+    assert f"core.attributesFile={os.devnull}" in captured_arguments
+    assert f"core.hooksPath={os.devnull}" in captured_arguments
+    assert "core.fsmonitor=false" in captured_arguments
     assert captured_keywords["stdin"] is asyncio.subprocess.DEVNULL
     environment = captured_keywords["env"]
     assert isinstance(environment, dict)

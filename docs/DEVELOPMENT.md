@@ -54,7 +54,7 @@ coverage閾値はM1では80%とする。生成物は`dist/`に出る。
 
 ## M2 Repository Tests
 
-Git 2.40以上を使用する。ripgrepがあればprimary search、なくてもPython fallback testが動く。fixtureは各testのOS temporary directoryにlocal Git repositoryを作り、networkを使わない。Windowsでdirectory symlink権限がない場合、そのalias testだけskipされるが、Git symlink objectの拒否は常に検証される。
+Git 2.40以上を使用する。ripgrepがあればfixed-string/regex searchを使用でき、ない場合はPythonのfixed-string fallback testが動く。regex fallbackはReDoSとengine差異を避けるため安全に拒否される。fixtureは各testのOS temporary directoryにlocal Git repositoryを作り、networkを使わない。Windowsでdirectory symlink権限がない場合、そのalias testだけskipされるが、Git symlink objectの拒否は常に検証される。
 
 ## Dependency Updates
 

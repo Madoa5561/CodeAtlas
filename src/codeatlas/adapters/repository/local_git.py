@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import tempfile
+import unicodedata
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
@@ -52,6 +53,13 @@ from codeatlas.domain.repository_ports import RepositoryRegistryPort
 _COMMIT_FORMAT = "%H%x00%P%x00%an%x00%ae%x00%aI%x00%cI%x00%s%x00%b%x00"
 _FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 _EMPTY_TREE_SHA = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
+
+def _decode_git_text(raw: bytes, safe_message: str) -> str:
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise RepositoryError(safe_message, internal_cause=error) from error
 
 
 class LocalGitRepositoryProvider:
@@ -102,7 +110,13 @@ class LocalGitRepositoryProvider:
             common_dir = root / common_dir
         common_dir = common_dir.resolve(strict=True)
         key = f"{canonical_path_key(root)}\x00{canonical_path_key(common_dir)}"
-        identifier = RepositoryId(f"repo_{hashlib.sha256(key.encode()).hexdigest()[:32]}")
+        common_stat = common_dir.stat()
+        filesystem_identity = f"{common_stat.st_dev}:{common_stat.st_ino}"
+        if common_stat.st_ino == 0:
+            filesystem_identity = canonical_path_key(common_dir)
+        identifier = RepositoryId(
+            f"repo_{hashlib.sha256(filesystem_identity.encode()).hexdigest()[:32]}"
+        )
         default_branch: str | None
         try:
             default_branch = (
@@ -140,7 +154,11 @@ class LocalGitRepositoryProvider:
                 exact_names = {
                     name
                     for item in refs.stdout.split(b"\x00")
-                    if (name := item.decode("utf-8").strip())
+                    if (
+                        name := _decode_git_text(
+                            item, "Git reference metadata was malformed."
+                        ).strip()
+                    )
                     in {f"refs/heads/{revision.value}", f"refs/tags/{revision.value}"}
                 }
                 if len(exact_names) > 1:
@@ -181,7 +199,9 @@ class LocalGitRepositoryProvider:
             namespace,
         )
         names = [
-            name for item in result.stdout.split(b"\x00") if (name := item.decode("utf-8").strip())
+            name
+            for item in result.stdout.split(b"\x00")
+            if (name := _decode_git_text(item, "Git reference metadata was malformed.").strip())
         ]
         return tuple(
             [await self.resolve_revision(repository_id, RevisionRef(name)) for name in names]
@@ -241,12 +261,20 @@ class LocalGitRepositoryProvider:
     ) -> tuple[TextSearchHit, ...]:
         """Search a temporary SHA-pinned snapshot with ripgrep or a Python fallback."""
         maximum = min(query.max_results, self._policy.limits.max_search_results)
-        with tempfile.TemporaryDirectory(prefix="codeatlas-") as temporary:
-            snapshot = Path(temporary)
-            await self._materialize_snapshot(revision, query, snapshot)
-            if shutil.which(self._ripgrep_executable):
-                return await self._search_ripgrep(revision, query, snapshot, maximum)
-            return self._search_python(revision, query, snapshot, maximum)
+        try:
+            with tempfile.TemporaryDirectory(prefix="codeatlas-") as temporary:
+                snapshot = Path(temporary)
+                snapshot.chmod(0o700)
+                await self._materialize_snapshot(revision, query, snapshot)
+                if shutil.which(self._ripgrep_executable):
+                    return await self._search_ripgrep(revision, query, snapshot, maximum)
+                if query.regex:
+                    raise RepositoryError("Regex search requires ripgrep.")
+                return self._search_python(revision, query, snapshot, maximum)
+        except OSError as error:
+            raise RepositoryError(
+                "The temporary search snapshot was unavailable.", internal_cause=error
+            ) from error
 
     async def get_commit(self, revision: ResolvedRevision) -> CommitInfo:
         """Return metadata for exactly one resolved commit."""
@@ -390,7 +418,10 @@ class LocalGitRepositoryProvider:
             if index + path_count > len(fields):
                 raise RepositoryError("Diff metadata was malformed.")
             groups.append(
-                tuple(fields[index + offset].decode("utf-8") for offset in range(path_count))
+                tuple(
+                    _decode_git_text(fields[index + offset], "Diff path metadata was malformed.")
+                    for offset in range(path_count)
+                )
             )
             index += path_count
         return tuple(groups)
@@ -426,10 +457,7 @@ class LocalGitRepositoryProvider:
 
     async def _git_text(self, root: Path, command: GitSubcommand, *arguments: str) -> str:
         result = await self._runner.run(root, command, *arguments)
-        try:
-            return result.stdout.decode("utf-8")
-        except UnicodeDecodeError as error:
-            raise RepositoryError(internal_cause=error) from error
+        return _decode_git_text(result.stdout, "Git output was malformed.")
 
     def _enforce_repository_size(self, root: Path) -> None:
         total = 0
@@ -452,7 +480,7 @@ class LocalGitRepositoryProvider:
                 continue
             metadata, name_bytes = record.split(b"\t", 1)
             mode, object_type, object_id, size_text = metadata.split(maxsplit=3)
-            name = name_bytes.decode("utf-8")
+            name = _decode_git_text(name_bytes, "Git tree metadata was malformed.")
             child = PurePosixPath(name) if parent.is_root else parent.value / name
             if object_type == b"tree":
                 entry_type = RepositoryEntryType.DIRECTORY
@@ -501,6 +529,7 @@ class LocalGitRepositoryProvider:
             "-l",
             revision.commit_sha,
         )
+        materialized_keys: set[str] = set()
         for entry in self._parse_tree(result.stdout, RepositoryPath.root()):
             if entry.entry_type is not RepositoryEntryType.FILE:
                 continue
@@ -527,9 +556,14 @@ class LocalGitRepositoryProvider:
                 validate_text_bytes(entry.path.value, blob.stdout)
             except (BinaryFileError, SecretDetectedError, LimitExceededError):
                 continue
+            identity = os.path.normcase(unicodedata.normalize("NFC", entry.path.as_posix()))
+            if identity in materialized_keys:
+                raise SecurityError("Repository paths collide on this filesystem.")
+            materialized_keys.add(identity)
             target = destination.joinpath(*entry.path.value.parts)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(blob.stdout)
+            target.chmod(0o600)
 
     @staticmethod
     def _matches_globs(path: str, query: TextSearchQuery) -> bool:
@@ -611,14 +645,16 @@ class LocalGitRepositoryProvider:
             relative = Path(data["path"]["text"]).relative_to(snapshot).as_posix()
             excerpt = data["lines"]["text"].rstrip("\r\n")
             for submatch in data["submatches"]:
+                start = self._utf8_byte_offset_to_character(excerpt, int(submatch["start"]))
+                end = self._utf8_byte_offset_to_character(excerpt, int(submatch["end"]))
                 hits.append(
                     self._search_hit(
                         revision,
                         RepositoryPath(PurePosixPath(relative)),
                         int(data["line_number"]),
                         excerpt,
-                        int(submatch["start"]),
-                        int(submatch["end"]),
+                        start,
+                        end,
                         snapshot,
                         query.context_lines,
                     )
@@ -626,6 +662,17 @@ class LocalGitRepositoryProvider:
                 if len(hits) >= maximum:
                     return tuple(hits)
         return tuple(hits)
+
+    @staticmethod
+    def _utf8_byte_offset_to_character(text: str, offset: int) -> int:
+        """Convert a ripgrep UTF-8 byte offset to a Python character offset."""
+        encoded = text.encode("utf-8")
+        try:
+            return len(encoded[:offset].decode("utf-8"))
+        except UnicodeDecodeError as error:
+            raise RepositoryError(
+                "Text search output was malformed.", internal_cause=error
+            ) from error
 
     @staticmethod
     async def _read_limited_stream(stream: asyncio.StreamReader, limit: int) -> bytes:
@@ -657,7 +704,7 @@ class LocalGitRepositoryProvider:
         maximum: int,
     ) -> tuple[TextSearchHit, ...]:
         flags = 0 if query.case_sensitive else re.IGNORECASE
-        pattern = re.compile(query.pattern if query.regex else re.escape(query.pattern), flags)
+        pattern = re.compile(re.escape(query.pattern), flags)
         hits: list[TextSearchHit] = []
         for file_path in sorted(path for path in snapshot.rglob("*") if path.is_file()):
             text = file_path.read_text(encoding="utf-8-sig")
@@ -720,26 +767,34 @@ class LocalGitRepositoryProvider:
                 offset : offset + 8
             ]
             sha = sha.lstrip(b"\n")
-            commits.append(
-                CommitInfo(
-                    repository_id,
-                    sha.decode("ascii"),
-                    tuple(parents.decode("ascii").split()),
-                    author.decode("utf-8", errors="replace"),
-                    email.decode("utf-8", errors="replace"),
-                    datetime.fromisoformat(authored.decode("ascii")),
-                    datetime.fromisoformat(committed.decode("ascii")),
-                    subject.decode("utf-8", errors="replace"),
-                    body.decode("utf-8", errors="replace").rstrip("\n"),
+            try:
+                commits.append(
+                    CommitInfo(
+                        repository_id,
+                        sha.decode("ascii"),
+                        tuple(parents.decode("ascii").split()),
+                        author.decode("utf-8"),
+                        email.decode("utf-8"),
+                        datetime.fromisoformat(authored.decode("ascii")),
+                        datetime.fromisoformat(committed.decode("ascii")),
+                        subject.decode("utf-8"),
+                        body.decode("utf-8").rstrip("\n"),
+                    )
                 )
-            )
+            except (UnicodeDecodeError, ValueError) as error:
+                raise RepositoryError(
+                    "Commit metadata was malformed.", internal_cause=error
+                ) from error
         return tuple(commits)
 
     @staticmethod
     def _parse_blame(
         revision: ResolvedRevision, path: RepositoryPath, raw: bytes
     ) -> tuple[BlameEntry, ...]:
-        lines = raw.decode("utf-8", errors="replace").splitlines()
+        try:
+            lines = raw.decode("utf-8").splitlines()
+        except UnicodeDecodeError as error:
+            raise RepositoryError("Blame metadata was malformed.", internal_cause=error) from error
         entries: list[BlameEntry] = []
         index = 0
         while index < len(lines):

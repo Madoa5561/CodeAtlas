@@ -9,6 +9,26 @@ from enum import StrEnum
 from pathlib import Path, PurePosixPath
 
 _SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+_ABBREVIATED_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{4,40}$")
+_FORBIDDEN_REF_CHARACTERS = re.compile(r"[\x00-\x20\x7f~^:?*\[\\]")
+
+
+def _is_safe_symbolic_revision(value: str) -> bool:
+    if value == "HEAD":
+        return True
+    if value.startswith("refs/") and not value.startswith(("refs/heads/", "refs/tags/")):
+        return False
+    if _FORBIDDEN_REF_CHARACTERS.search(value) or value == "@":
+        return False
+    components = value.split("/")
+    return not (
+        ".." in value
+        or "@{" in value
+        or any(
+            not component or component.startswith(".") or component.endswith((".", ".lock"))
+            for component in components
+        )
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,6 +101,10 @@ class RevisionRef:
             raise ValueError("invalid revision")
         if self.value.startswith("-"):
             raise ValueError("revision cannot be an option")
+        if _ABBREVIATED_SHA_PATTERN.fullmatch(self.value):
+            return
+        if not _is_safe_symbolic_revision(self.value):
+            raise ValueError("revision must be a branch, tag, or SHA")
 
 
 @dataclass(frozen=True, slots=True)

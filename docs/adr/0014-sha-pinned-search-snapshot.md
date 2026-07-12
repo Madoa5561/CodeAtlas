@@ -11,7 +11,9 @@ ripgrep searches filesystem content, while CodeAtlas must ignore working-tree ch
 
 Enumerate the commit tree with `ls-tree`, read eligible blobs by object ID with `cat-file`, and materialize only validated text into an unpredictable OS temporary directory. Symlinks, submodules, excluded paths, binary content, secret candidates, and oversized files are never materialized.
 
-Use ripgrep with JSON output, no config, argv arguments, timeout, bounded streams, minimal environment, and fixed snapshot root. If ripgrep is unavailable, run the same fixed/regex/case/glob/context semantics with the Python standard library over that snapshot. `TemporaryDirectory` guarantees cleanup on success, error, timeout, or cancellation.
+Use ripgrep with JSON output, no config, argv arguments, timeout, bounded streams, minimal environment, and fixed snapshot root. Convert ripgrep UTF-8 byte offsets to public character offsets. If ripgrep is unavailable, the Python standard library provides fixed-string, case, glob, and context behavior over the same snapshot. Regex search fails safely rather than exposing the event loop to unbounded backtracking or pretending that Python and ripgrep regex dialects are identical.
+
+The snapshot directory and files use owner-restricted permissions where supported. Before writing, normalize a path identity with Unicode NFC and the host's case rules; reject collisions rather than overwriting evidence. `TemporaryDirectory` performs cleanup on success, error, timeout, or cancellation, and cleanup failures are translated to a safe error.
 
 ## Consequences
 

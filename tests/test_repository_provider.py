@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import shutil
+import tempfile
 from pathlib import Path, PurePosixPath
 
 import pytest
@@ -26,6 +28,7 @@ from codeatlas.domain.errors import (
 )
 from codeatlas.domain.repository_models import (
     RepositoryEntryType,
+    RepositoryId,
     RepositoryLimits,
     RepositoryLocation,
     RepositoryPath,
@@ -77,6 +80,40 @@ async def test_registers_and_deduplicates_canonical_repository(
     second = await provider.register_local_repository(RepositoryLocation(alias))
     assert first.repository_id == second.repository_id
     assert first.canonical_location.path == git_repository.root.resolve()
+
+
+@pytest.mark.asyncio
+async def test_repository_identity_survives_same_filesystem_move(
+    git_repository: GitRepositoryFixture,
+) -> None:
+    """Git directory filesystem identity remains stable across a local rename."""
+    first = await make_provider().register_local_repository(RepositoryLocation(git_repository.root))
+    moved = git_repository.root.with_name(f"{git_repository.root.name}-moved")
+    shutil.move(git_repository.root, moved)
+    second = await make_provider().register_local_repository(RepositoryLocation(moved))
+    assert first.repository_id == second.repository_id
+
+
+@pytest.mark.asyncio
+async def test_linked_worktree_uses_existing_repository_identity(
+    git_repository: GitRepositoryFixture,
+    tmp_path: Path,
+) -> None:
+    """Linked worktrees sharing one Git common directory do not overwrite identity."""
+    linked = tmp_path / "linked-worktree"
+    run_git(
+        git_repository.root,
+        "worktree",
+        "add",
+        "-b",
+        "linked-test",
+        str(linked),
+        git_repository.head_sha,
+    )
+    provider = make_provider()
+    first = await provider.register_local_repository(RepositoryLocation(git_repository.root))
+    second = await provider.register_local_repository(RepositoryLocation(linked))
+    assert second is first
 
 
 @pytest.mark.asyncio
@@ -245,14 +282,23 @@ async def test_rejects_invalid_or_injection_revision(
     provider = make_provider()
     descriptor = await provider.register_local_repository(RepositoryLocation(git_repository.root))
     marker = tmp_path / "injected"
-    with pytest.raises(InvalidRevisionError):
-        await provider.resolve_revision(
-            descriptor.repository_id,
-            RevisionRef(f"HEAD;touch {marker}"),
-        )
+    with pytest.raises(ValueError):
+        RevisionRef(f"HEAD;touch {marker}")
     assert marker.exists() is False
     with pytest.raises(InvalidRevisionError):
         await provider.resolve_revision(descriptor.repository_id, RevisionRef("ambiguous"))
+
+
+@pytest.mark.parametrize("value", ["HEAD~1", "main^{tree}", "main@{1}", "refs/heads/../main"])
+def test_revision_expressions_are_rejected(value: str) -> None:
+    """Only branch, tag, HEAD, and SHA forms cross the domain boundary."""
+    with pytest.raises(ValueError):
+        RevisionRef(value)
+
+
+def test_unicode_and_at_sign_are_allowed_in_symbolic_revision() -> None:
+    """Legitimate internationalized ref names are not rejected by hardening."""
+    assert RevisionRef("release/日本語@1").value == "release/日本語@1"
 
 
 @pytest.mark.asyncio
@@ -328,8 +374,8 @@ async def test_search_fixed_regex_case_glob_context_and_cleanup(
     hits = await provider.search_text(
         head,
         TextSearchQuery(
-            "NEEDLE" if not use_fallback else r"needle\s+second",
-            regex=use_fallback,
+            "NEEDLE SECOND",
+            regex=False,
             case_sensitive=False,
             include_globs=("src/*.txt",),
             max_results=1,
@@ -342,6 +388,68 @@ async def test_search_fixed_regex_case_glob_context_and_cleanup(
     assert hits[0].context_before == ("hello world",)
     assert hits[0].context_after == ("context after",)
     assert list(temp_root.iterdir()) == []
+
+
+@pytest.mark.asyncio
+async def test_fallback_rejects_regex_without_blocking_event_loop(
+    git_repository: GitRepositoryFixture,
+) -> None:
+    """The stdlib fallback never evaluates attacker-controlled regular expressions."""
+    provider = make_provider(ripgrep_executable="missing-rg")
+    descriptor = await provider.register_local_repository(RepositoryLocation(git_repository.root))
+    head = await provider.resolve_revision(descriptor.repository_id, RevisionRef("main"))
+    with pytest.raises(RepositoryError, match="Regex search requires ripgrep"):
+        await provider.search_text(head, TextSearchQuery(r"(a+)+$", regex=True))
+
+
+@pytest.mark.asyncio
+async def test_ripgrep_offsets_are_character_based_for_unicode(
+    git_repository: GitRepositoryFixture,
+) -> None:
+    """ripgrep byte coordinates are normalized to public character coordinates."""
+    (git_repository.root / "unicode.txt").write_text("日本語 needle\n", encoding="utf-8")
+    run_git(git_repository.root, "add", "unicode.txt")
+    run_git(git_repository.root, "commit", "-m", "add unicode search fixture")
+    provider = make_provider()
+    descriptor = await provider.register_local_repository(RepositoryLocation(git_repository.root))
+    head = await provider.resolve_revision(descriptor.repository_id, RevisionRef("main"))
+    hits = await provider.search_text(head, TextSearchQuery("needle"))
+    unicode_hit = next(hit for hit in hits if hit.path.as_posix() == "unicode.txt")
+    assert (unicode_hit.match_start, unicode_hit.match_end) == (4, 10)
+
+
+@pytest.mark.asyncio
+async def test_snapshot_rejects_unicode_normalization_collision(
+    git_repository: GitRepositoryFixture,
+) -> None:
+    """Canonically equivalent Git paths cannot overwrite snapshot evidence."""
+    composed = "caf\N{LATIN SMALL LETTER E WITH ACUTE}.txt"
+    decomposed = "cafe\N{COMBINING ACUTE ACCENT}.txt"
+    (git_repository.root / composed).write_text("collision one\n", encoding="utf-8")
+    (git_repository.root / decomposed).write_text("collision two\n", encoding="utf-8")
+    run_git(git_repository.root, "add", "--", composed, decomposed)
+    run_git(git_repository.root, "commit", "-m", "add colliding paths")
+    provider = make_provider()
+    descriptor = await provider.register_local_repository(RepositoryLocation(git_repository.root))
+    head = await provider.resolve_revision(descriptor.repository_id, RevisionRef("main"))
+    with pytest.raises(SecurityError, match="collide"):
+        await provider.search_text(head, TextSearchQuery("collision"))
+
+
+@pytest.mark.asyncio
+async def test_path_starting_with_dash_is_read_as_data(
+    git_repository: GitRepositoryFixture,
+) -> None:
+    """A leading dash in a path remains path data after Git's option boundary."""
+    path = "-notes.txt"
+    (git_repository.root / path).write_text("dash path\n", encoding="utf-8")
+    run_git(git_repository.root, "add", "--", path)
+    run_git(git_repository.root, "commit", "-m", "add dash path")
+    provider = make_provider()
+    descriptor = await provider.register_local_repository(RepositoryLocation(git_repository.root))
+    head = await provider.resolve_revision(descriptor.repository_id, RevisionRef("main"))
+    content = await provider.read_file(head, RepositoryPath(PurePosixPath(path)))
+    assert content.content.splitlines() == ["dash path"]
 
 
 @pytest.mark.asyncio
@@ -381,6 +489,44 @@ async def test_search_cancellation_cleans_snapshot(
     with pytest.raises(asyncio.CancelledError):
         await task
     assert list(temp_root.iterdir()) == []
+
+
+@pytest.mark.asyncio
+async def test_snapshot_cleanup_failure_has_safe_message(
+    git_repository: GitRepositoryFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cleanup diagnostics never expose an absolute temporary path publicly."""
+    original = tempfile.TemporaryDirectory
+
+    class FailingCleanup:
+        def __init__(self, *arguments: object, **keywords: object) -> None:
+            self._temporary = original(*arguments, **keywords)
+
+        def __enter__(self) -> str:
+            return self._temporary.__enter__()
+
+        def __exit__(self, *arguments: object) -> None:
+            self._temporary.__exit__(*arguments)
+            raise OSError(r"C:\private\snapshot")
+
+    monkeypatch.setattr(tempfile, "TemporaryDirectory", FailingCleanup)
+    provider = make_provider(ripgrep_executable="missing-rg")
+    descriptor = await provider.register_local_repository(RepositoryLocation(git_repository.root))
+    head = await provider.resolve_revision(descriptor.repository_id, RevisionRef("main"))
+    with pytest.raises(RepositoryError) as captured:
+        await provider.search_text(head, TextSearchQuery("needle"))
+    assert str(captured.value) == "The temporary search snapshot was unavailable."
+    assert "private" not in str(captured.value).casefold()
+
+
+def test_invalid_utf8_commit_metadata_has_safe_message() -> None:
+    """Malformed Git metadata is rejected instead of silently replacing evidence."""
+    raw = b"0" * 40 + b"\x00\x00\xff\x00mail\x002026-01-01T00:00:00+00:00\x00"
+    raw += b"2026-01-01T00:00:00+00:00\x00subject\x00body\x00"
+    repository_id = RepositoryId("repo_" + "0" * 32)
+    with pytest.raises(RepositoryError, match="Commit metadata was malformed"):
+        LocalGitRepositoryProvider._parse_commits(repository_id, raw)
 
 
 @pytest.mark.asyncio

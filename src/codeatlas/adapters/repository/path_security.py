@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import unicodedata
 from pathlib import Path, PurePosixPath
 
 from codeatlas.domain.errors import SecurityError
@@ -42,7 +43,8 @@ def normalize_repository_path(
 
 def canonical_path_key(path: Path) -> str:
     """Return an OS-aware canonical key for duplicate detection."""
-    return os.path.normcase(os.path.normpath(str(path.resolve(strict=True))))
+    resolved = unicodedata.normalize("NFC", str(path.resolve(strict=True)))
+    return os.path.normcase(os.path.normpath(resolved))
 
 
 def ensure_contained(root: Path, candidate: Path) -> Path:
