@@ -47,4 +47,6 @@ Python pluginはsandboxではない。第三者pluginはCodeAtlas processと同�
 
 M2ではlocal repositoryのpath containment、SHA固定object read、basic secret/binary exclusion、bounded Git/ripgrep processを実装した。詳細は[REPOSITORY_SECURITY.md](REPOSITORY_SECURITY.md)を参照する。
 
-SSRF、Prompt InjectionのAgent境界、webhook署名、Qdrant/SQLite整合性はM3以降の該当機能と同時に実装・testする。mockだけを置いて実装済みとは扱わない。
+M3ではsafe textだけをgeneration-scoped SQLite rowへ保存し、unsafe contentはreason codeだけを保持する。staging validation、partial unique active index、atomic publication、opaque lease、stale recovery、rollbackを実装した。DB safe errorにはSQL、絶対path、source本文を含めない。SQLite file自体は安全なsource本文を含むため、OS permission、volume access、backup、retentionをsecret相当の運用境界として扱う。
+
+SSRF、Prompt InjectionのAgent境界、webhook署名、Qdrant projection整合性は後続の該当機能と同時に実装・testする。QdrantはM3のsource of truthでもpublication対象でもない。mockだけを置いて実装済みとは扱わない。

@@ -16,3 +16,8 @@
 | [0012](0012-unified-knowledge-graph.md) | Accepted | 横断Unified Knowledge Graph |
 | [0013](0013-plugin-event-interaction.md) | Accepted | Plugin、Event、UI非依存Interaction |
 | [0014](0014-sha-pinned-search-snapshot.md) | Accepted | SHA固定temporary search snapshot |
+| [0015](0015-sqlalchemy-alembic-sqlite.md) | Accepted | SQLAlchemy、Alembic、SQLite |
+| [0016](0016-transactional-index-generations.md) | Accepted | immutable staging generationとatomic publication |
+| [0017](0017-tree-sitter-grammar-versions.md) | Accepted | Tree-sitter grammar version管理 |
+| [0018](0018-incremental-file-identity.md) | Accepted | incremental file/symbol identity |
+| [0019](0019-sqlite-source-of-truth.md) | Accepted | SQLiteをM3 source of truthとする方針 |

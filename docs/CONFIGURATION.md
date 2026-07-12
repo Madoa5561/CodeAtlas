@@ -17,13 +17,13 @@ process environmentが`.env`より優先される。不正な型、範囲外の�
 | --- | --- | --- |
 | `APPLICATION` | environment、service name、shutdown timeout | 利用 |
 | `LOGGING` | level、JSON/console | 利用 |
-| `DATABASE` | SQLite URL、busy timeout | 検証のみ |
+| `DATABASE` | SQLite URL、busy/lease/lock timeout | M3で利用 |
 | `QDRANT` | URL、API key、timeout | 検証のみ、接続なし |
 | `OLLAMA` | base URL、model、timeout | 検証のみ、接続なし |
 | `DISCORD` | enabled、token、forum ID | 検証のみ、adapterなし |
 | `GITHUB` | enabled、token、webhook secret、API URL | 検証のみ、adapterなし |
 | `SECURITY` | plugin allowlist、read-only、HTTP上限 | 一部利用 |
-| `INDEXING` | file/repository/concurrency/timeout上限 | 検証のみ |
+| `INDEXING` | file/repository/concurrency/timeout/parser/failure上限 | M3で利用 |
 | `REPOSITORY` | Git/ripgrep executable、read/search/diff/command上限 | M2で利用 |
 
 全項目と既定値は[`.env.example`](../.env.example)を参照する。
@@ -47,3 +47,9 @@ Manifestのorigin既定値は`third_party`であり、第三者pluginが暗黙�
 ## Repository Limits
 
 `CODEATLAS_REPOSITORY__*`でGit/ripgrep executable、2 GiB repository、1 MiB text/search file、1,000 directory entries、100 search hits、2 MiB diff、4 MiB command output、30秒timeoutの既定値を変更できる。Pydanticが安全な上限・下限を起動時に検証する。executableは`git(.exe)`と`rg(.exe)`だけを許可する。
+
+## M3 Database and Indexing
+
+`CODEATLAS_DATABASE__LEASE_TIMEOUT_SECONDS`はprocess間lease、`LOCK_WAIT_TIMEOUT_SECONDS`はprocess内repository lock待機を制限する。`CODEATLAS_INDEXING__MAX_PARSER_NODES`、`MAX_PARSER_DEPTH`、`MAX_FAILURE_RATE`、`EXCLUDE_GENERATED`、`EXCLUDE_MINIFIED`はactivation前のresource/failure policyへ含まれ、変更時はincremental reuseを無効化する。
+
+Database URLはSQLiteだけを許可する。migrationは起動時に自動適用せず、`codeatlas-admin db upgrade`を明示実行する。

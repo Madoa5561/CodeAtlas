@@ -35,14 +35,16 @@
 
 完了条件: application変更なしでfixture UI/pluginを追加でき、event replayが冪等である。
 
-## M3: Transactional Indexing
+## M3: Transactional Indexing（完了）
 
 - SQLAlchemy/Alembic/SQLite schema
 - TS/JS Tree-sitter symbol extraction
-- Unified Graph schema、Thrift基礎projection、Git/Call/Dependency横断edge
-- generation、差分更新、削除、復旧、repository lock、FTS
+- generation、差分更新、削除、復旧、repository lock
+- import/export/reference/extends/implements候補relation
 
 完了条件: full/delta/retry 後の結果が同一で旧世代が破損しない。
+
+FTS、Thrift、確定Call/Dependency Graph、Qdrant projectionはM3完了範囲に含めず、後続milestoneで実装する。
 
 ## M4: Agent and Ollama
 

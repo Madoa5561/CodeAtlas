@@ -1,8 +1,8 @@
 # Deployment
 
-## M1 Scope
+## M3 Scope
 
-M1 containerは設定をloadし、loggingと空のPlugin Registryを初期化して停止signalを待つfoundation processである。HTTP server、Discord、Repository解析、DB/Qdrant接続は提供しない。
+Container processはfoundation lifecycleを実行する。M3のSQLite migration/indexingは`codeatlas-admin`による明示管理操作であり、service起動時に自動実行しない。HTTP server、Discord、Qdrant接続は提供しない。
 
 ## Production-style Compose
 
@@ -43,7 +43,16 @@ services:
 - secretはimage、Dockerfile、Composeへ書かない。
 - 必要になった時点でenvironmentまたはsecret managerから注入する。
 - `.env`はGit管理対象外であり、Composeの自動読込にsecretを置く場合も配布しない。
-- backup/migrationはDB実装前のため未提供である。
+- migration前に`/app/data/codeatlas.db` volumeをbackupする。downgradeはM3 index tableを削除する破壊的な明示操作である。
+
+## M3 Migration
+
+```powershell
+docker compose run --rm codeatlas codeatlas-admin --json db upgrade
+docker compose run --rm codeatlas codeatlas-admin --json db current
+```
+
+Repositoryをcontainerからindexする場合は承認済みdirectoryだけをread-only mountする。SQLite data volumeだけが書込み可能である。
 
 ## Shutdown
 

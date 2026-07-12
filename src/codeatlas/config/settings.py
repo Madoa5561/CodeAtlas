@@ -40,10 +40,12 @@ class LoggingSettings(BaseModel):
 
 
 class DatabaseSettings(BaseModel):
-    """SQLite settings reserved for later persistence work."""
+    """SQLite transactional index settings."""
 
     url: str = Field(default="sqlite:///./data/codeatlas.db", min_length=1)
     busy_timeout_seconds: float = Field(default=5.0, ge=0.1, le=60.0)
+    lease_timeout_seconds: float = Field(default=120.0, ge=5.0, le=3_600.0)
+    lock_wait_timeout_seconds: float = Field(default=5.0, ge=0.1, le=120.0)
 
     @model_validator(mode="after")
     def require_sqlite(self) -> DatabaseSettings:
@@ -128,12 +130,17 @@ class SecuritySettings(BaseModel):
 
 
 class IndexingLimits(BaseModel):
-    """Resource limits for the future indexer."""
+    """Resource and failure limits for transactional indexing."""
 
     max_file_bytes: int = Field(default=1_000_000, ge=1_024, le=50_000_000)
     max_repository_files: int = Field(default=100_000, ge=1, le=1_000_000)
     max_concurrency: int = Field(default=4, ge=1, le=32)
     operation_timeout_seconds: float = Field(default=300.0, ge=1.0, le=3_600.0)
+    max_parser_nodes: int = Field(default=200_000, ge=1_000, le=2_000_000)
+    max_parser_depth: int = Field(default=512, ge=16, le=2_048)
+    max_failure_rate: float = Field(default=0.05, ge=0.0, le=1.0)
+    exclude_generated: bool = True
+    exclude_minified: bool = True
 
 
 class RepositorySettings(BaseModel):

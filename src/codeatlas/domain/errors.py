@@ -86,6 +86,27 @@ class IndexingError(CodeAtlasError):
     code = "indexing_error"
 
 
+class IndexBusyError(IndexingError):
+    """Another indexing lease already owns the repository."""
+
+    default_safe_message = "The repository is already being indexed."
+    code = "index_busy"
+
+
+class IndexSchemaError(IndexingError):
+    """The persistent index schema is not at the required revision."""
+
+    default_safe_message = "The index database schema is not current."
+    code = "index_schema_error"
+
+
+class IndexValidationError(IndexingError):
+    """A staging generation failed consistency validation."""
+
+    default_safe_message = "The index generation failed validation."
+    code = "index_validation_error"
+
+
 class SecurityError(CodeAtlasError):
     """A security policy rejected an operation."""
 

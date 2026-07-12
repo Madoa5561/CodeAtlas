@@ -42,19 +42,30 @@ python -m mypy
 python -m build
 ```
 
-coverage閾値はM1では80%とする。生成物は`dist/`に出る。
+coverageの初期閾値は80%とする。生成物は`dist/`に出る。
 
 ## Architecture Rules
 
 - `domain`は標準libraryだけに依存する。
 - Pydanticは`config`、structlogは`infrastructure`に閉じ込める。
 - Plugin APIは外部serviceを自動発見・downloadしない。
-- `bootstrap.py`だけが具象foundation serviceを組み立てる。
-- M2前にRepository、Discord、LLM、Tree-sitter、Qdrant clientを追加しない。
+- composition rootと管理CLI factoryだけが具象adapter/pluginを組み立てる。
+- Qdrant、Discord、LLM、GitHub、Webhook、MCPをM3へ追加しない。
 
 ## M2 Repository Tests
 
 Git 2.40以上を使用する。ripgrepがあればfixed-string/regex searchを使用でき、ない場合はPythonのfixed-string fallback testが動く。regex fallbackはReDoSとengine差異を避けるため安全に拒否される。fixtureは各testのOS temporary directoryにlocal Git repositoryを作り、networkを使わない。Windowsでdirectory symlink権限がない場合、そのalias testだけskipされるが、Git symlink objectの拒否は常に検証される。
+
+## M3 Development
+
+M3 testsはOS temporary directoryにGit repositoryとSQLite DBを作り、外部networkを使用しない。migration lifecycleを確認するには次を実行する。
+
+```powershell
+codeatlas-admin --json db upgrade
+codeatlas-admin --json db current
+```
+
+schema変更はSQLAlchemy persistence model、Alembic migration、upgrade/downgrade/re-upgrade testを同じ変更で更新する。application起動時の自動migrationは禁止する。Tree-sitter/grammar更新時はconstraints、ADR-0017、parser fingerprint、fixtureを更新する。
 
 ## Dependency Updates
 

@@ -3,7 +3,7 @@
 CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き回答をDiscord Forumなどへ返すことを目指すOSSのCode Intelligence Platformです。
 
 > [!IMPORTANT]
-> 現在はM1「OSS/開発基盤」まで実装済みです。Repository解析、Discord Bot、LLM接続、Tree-sitter、Qdrant接続は未実装です。
+> 現在はM3「Transactional Indexing」まで実装済みです。Qdrant、LLM、Agent Pipeline、Discord、GitHub API、Webhook、MCP、Thrift parserは未実装です。
 
 ## Status
 
@@ -15,12 +15,13 @@ CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き�
 | pytest、Ruff、mypy、coverage、package build、CI | 整備済み |
 | Docker foundation process、ComposeのQdrant定義 | 整備済み、Qdrant接続は未実装 |
 | Local Git登録、SHA固定tree/file/search/history | M2実装済み |
-| SQL索引、Tree-sitter、Qdrant、Hybrid Retrieval | 未実装 |
+| SQLite transactional generation、TS/JS Tree-sitter索引 | M3実装済み |
+| Qdrant、Hybrid Retrieval、Thrift parser | 未実装 |
 | Agent Pipeline、Model Provider、Discord/API/CLI | 未実装 |
 
 詳細は[ロードマップ](docs/ROADMAP.md)を参照してください。
 
-M2 Repository Providerのsecurity boundaryは[Repository Security](docs/REPOSITORY_SECURITY.md)、操作仕様は[Repository Provider](docs/REPOSITORY_PROVIDER.md)を参照してください。CLIはまだ未実装です。
+M2 Repository Providerのsecurity boundaryは[Repository Security](docs/REPOSITORY_SECURITY.md)、操作仕様は[Repository Provider](docs/REPOSITORY_PROVIDER.md)を参照してください。M3の索引仕様は[Transactional Indexing](docs/INDEXING.md)を参照してください。`codeatlas-admin`はmigration/index検証用であり、完成版Interaction CLIではありません。
 
 ## Architecture
 
@@ -41,6 +42,13 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]" -c constraints\py312.txt
 python -m pytest
+```
+
+M3 databaseを明示的にupgradeする場合:
+
+```powershell
+codeatlas-admin --json db upgrade
+codeatlas-admin --json db current
 ```
 
 Linux/macOSではactivateだけが異なります。
