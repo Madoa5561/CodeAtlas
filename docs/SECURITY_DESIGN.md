@@ -45,4 +45,6 @@ Python pluginはsandboxではない。第三者pluginはCodeAtlas processと同�
 
 ## Deferred Controls
 
-SSRF、path containment、Prompt Injection、repository secret scanning、webhook署名、Qdrant/SQLite整合性はM2以降の該当機能と同時に実装・testする。M1でmockだけを置いて実装済みとは扱わない。
+M2ではlocal repositoryのpath containment、SHA固定object read、basic secret/binary exclusion、bounded Git/ripgrep processを実装した。詳細は[REPOSITORY_SECURITY.md](REPOSITORY_SECURITY.md)を参照する。
+
+SSRF、Prompt InjectionのAgent境界、webhook署名、Qdrant/SQLite整合性はM3以降の該当機能と同時に実装・testする。mockだけを置いて実装済みとは扱わない。

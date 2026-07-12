@@ -24,6 +24,7 @@ process environmentが`.env`より優先される。不正な型、範囲外の�
 | `GITHUB` | enabled、token、webhook secret、API URL | 検証のみ、adapterなし |
 | `SECURITY` | plugin allowlist、read-only、HTTP上限 | 一部利用 |
 | `INDEXING` | file/repository/concurrency/timeout上限 | 検証のみ |
+| `REPOSITORY` | Git/ripgrep executable、read/search/diff/command上限 | M2で利用 |
 
 全項目と既定値は[`.env.example`](../.env.example)を参照する。
 
@@ -42,3 +43,7 @@ Discord、GitHub、Ollama、Qdrantは`ENABLED=false`ならcredentialなしで起
 - plugin ID配列: 列挙されたIDだけを許可する。
 
 Manifestのorigin既定値は`third_party`であり、第三者pluginが暗黙にbuilt-inになることはない。repositoryや任意pathからpluginをloadする機能はない。
+
+## Repository Limits
+
+`CODEATLAS_REPOSITORY__*`でGit/ripgrep executable、2 GiB repository、1 MiB text/search file、1,000 directory entries、100 search hits、2 MiB diff、4 MiB command output、30秒timeoutの既定値を変更できる。Pydanticが安全な上限・下限を起動時に検証する。executableは`git(.exe)`と`rg(.exe)`だけを許可する。

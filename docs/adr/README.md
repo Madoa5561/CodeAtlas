@@ -8,10 +8,11 @@
 | [0004](0004-hybrid-retrieval.md) | Accepted | Hybrid Retrieval |
 | [0005](0005-read-only-security-boundary.md) | Accepted | deny-by-default の読み取り専用境界 |
 | 0006 | Proposed | SQLite FTS5 と BM25 ライブラリ |
-| 0007 | Proposed | Git CLI と GitPython |
+| [0007](0007-git-cli.md) | Accepted | 固定read-only Git CLI adapter |
 | 0008 | Proposed | Tree-sitter/Thrift grammar |
 | [0009](0009-python-dependency-management.md) | Accepted | venv、pip、constraintsによる依存管理 |
 | 0010 | Proposed | job queue と process coordination |
 | [0011](0011-agent-pipeline.md) | Accepted | Agentを5つの責務へ分離 |
 | [0012](0012-unified-knowledge-graph.md) | Accepted | 横断Unified Knowledge Graph |
 | [0013](0013-plugin-event-interaction.md) | Accepted | Plugin、Event、UI非依存Interaction |
+| [0014](0014-sha-pinned-search-snapshot.md) | Accepted | SHA固定temporary search snapshot |

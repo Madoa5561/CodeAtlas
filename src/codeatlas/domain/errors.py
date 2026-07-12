@@ -91,3 +91,31 @@ class SecurityError(CodeAtlasError):
 
     default_safe_message = "The operation was rejected by security policy."
     code = "security_error"
+
+
+class BinaryFileError(SecurityError):
+    """A binary file was rejected from a text-only operation."""
+
+    default_safe_message = "The requested file is not approved text content."
+    code = "binary_file"
+
+
+class SecretDetectedError(SecurityError):
+    """A possible secret caused content access to be denied."""
+
+    default_safe_message = "The requested content is excluded by security policy."
+    code = "secret_detected"
+
+
+class LimitExceededError(CodeAtlasError):
+    """A configured resource or output limit was exceeded."""
+
+    default_safe_message = "The operation exceeded a configured safety limit."
+    code = "limit_exceeded"
+
+
+class InvalidRevisionError(InputValidationError):
+    """A revision was invalid, ambiguous, or did not identify a commit."""
+
+    default_safe_message = "The requested revision is invalid or unavailable."
+    code = "invalid_revision"

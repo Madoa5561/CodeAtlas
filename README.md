@@ -14,10 +14,13 @@ CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き�
 | Plugin Registry、bootstrap、lifecycle | M1最小契約を実装済み |
 | pytest、Ruff、mypy、coverage、package build、CI | 整備済み |
 | Docker foundation process、ComposeのQdrant定義 | 整備済み、Qdrant接続は未実装 |
-| Repository解析、索引、Hybrid Retrieval | 未実装 |
+| Local Git登録、SHA固定tree/file/search/history | M2実装済み |
+| SQL索引、Tree-sitter、Qdrant、Hybrid Retrieval | 未実装 |
 | Agent Pipeline、Model Provider、Discord/API/CLI | 未実装 |
 
 詳細は[ロードマップ](docs/ROADMAP.md)を参照してください。
+
+M2 Repository Providerのsecurity boundaryは[Repository Security](docs/REPOSITORY_SECURITY.md)、操作仕様は[Repository Provider](docs/REPOSITORY_PROVIDER.md)を参照してください。CLIはまだ未実装です。
 
 ## Architecture
 

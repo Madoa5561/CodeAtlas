@@ -52,6 +52,10 @@ coverage閾値はM1では80%とする。生成物は`dist/`に出る。
 - `bootstrap.py`だけが具象foundation serviceを組み立てる。
 - M2前にRepository、Discord、LLM、Tree-sitter、Qdrant clientを追加しない。
 
+## M2 Repository Tests
+
+Git 2.40以上を使用する。ripgrepがあればprimary search、なくてもPython fallback testが動く。fixtureは各testのOS temporary directoryにlocal Git repositoryを作り、networkを使わない。Windowsでdirectory symlink権限がない場合、そのalias testだけskipされるが、Git symlink objectの拒否は常に検証される。
+
 ## Dependency Updates
 
 `pyproject.toml`の互換範囲と`constraints/py312.txt`を同じPull Requestで更新し、Windows/Linux CIのquality gatesとlicense/security影響を確認する。constraintsはclean Python 3.12環境で検証する。

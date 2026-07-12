@@ -6,6 +6,10 @@
 
 ### Added
 
+- M2 local Git Repository Port、Application Service、in-memory Registry、built-in Plugin
+- SHA固定tree/file/search/commit/history/blame/diff操作
+- bounded read-only Git CLI runnerとripgrep/Python snapshot search
+- repository path、binary、basic credential、resource limit security policy
 - Apache License 2.0とOSS governance文書
 - Python 3.12 package metadata、runtime/development依存の分離、constraints
 - Pydantic Settingsによる検証済み設定

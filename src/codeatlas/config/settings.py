@@ -136,6 +136,22 @@ class IndexingLimits(BaseModel):
     operation_timeout_seconds: float = Field(default=300.0, ge=1.0, le=3_600.0)
 
 
+class RepositorySettings(BaseModel):
+    """Safety limits for read-only local repository operations."""
+
+    git_executable: str = Field(default="git", pattern=r"^git(?:\.exe)?$")
+    ripgrep_executable: str = Field(default="rg", pattern=r"^rg(?:\.exe)?$")
+    max_repository_bytes: int = Field(default=2 * 1024**3, ge=1024**2, le=20 * 1024**3)
+    max_text_file_bytes: int = Field(default=1024**2, ge=1024, le=10 * 1024**2)
+    max_search_file_bytes: int = Field(default=1024**2, ge=1024, le=10 * 1024**2)
+    max_directory_entries: int = Field(default=1_000, ge=1, le=10_000)
+    max_search_results: int = Field(default=100, ge=1, le=1_000)
+    max_diff_bytes: int = Field(default=2 * 1024**2, ge=1024, le=20 * 1024**2)
+    max_command_output_bytes: int = Field(default=4 * 1024**2, ge=1024, le=32 * 1024**2)
+    command_timeout_seconds: float = Field(default=30.0, ge=1.0, le=120.0)
+    detect_renames: bool = True
+
+
 class CodeAtlasSettings(BaseSettings):
     """Root settings model for all CodeAtlas components."""
 
@@ -157,6 +173,7 @@ class CodeAtlasSettings(BaseSettings):
     github: GitHubSettings = Field(default_factory=GitHubSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     indexing: IndexingLimits = Field(default_factory=IndexingLimits)
+    repository: RepositorySettings = Field(default_factory=RepositorySettings)
 
 
 def load_settings(env_file: Path | str | None = None) -> CodeAtlasSettings:

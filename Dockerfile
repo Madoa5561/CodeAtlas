@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.12.8-slim AS builder
+FROM python:3.12-slim-trixie AS builder
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1
@@ -10,7 +10,7 @@ COPY constraints ./constraints
 COPY src ./src
 RUN python -m pip wheel --wheel-dir /wheels -c constraints/py312.txt .
 
-FROM python:3.12.8-slim AS runtime
+FROM python:3.12-slim-trixie AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -18,7 +18,10 @@ ENV PYTHONUNBUFFERED=1 \
     CODEATLAS_LOGGING__FORMAT=json \
     CODEATLAS_DATABASE__URL=sqlite:////app/data/codeatlas.db
 
-RUN groupadd --system --gid 10001 codeatlas \
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends git ripgrep \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 10001 codeatlas \
     && useradd --system --uid 10001 --gid codeatlas --home-dir /app codeatlas \
     && mkdir -p /app/data \
     && chown -R codeatlas:codeatlas /app

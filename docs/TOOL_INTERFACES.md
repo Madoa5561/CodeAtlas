@@ -17,6 +17,8 @@
 | git | `get_commit`, `search_commits`, `get_file_history`, `get_blame`, `compare_refs`, `get_diff` |
 | collaboration | `get_pull_request`, `get_pull_request_diff`, `list_issues` |
 
+M2ではcatalog、refs/tree、text search、Git historyのlocal read-only subsetを実装した。symbol/graph/collaboration Toolは未実装である。
+
 ## 代表型
 
 - `RepositoryRef`: stable repository ID
@@ -25,6 +27,8 @@
 - `SearchQuery`: query、filter、limit、cursor
 - `SearchHit`: location、excerpt、method、score、verified
 - `ToolError`: category、safe message、retryable、correlation ID
+
+M2のdomain modelは`RepositoryId`、`RepositoryLocation`、`RepositoryDescriptor`、`RepositoryPath`、`RevisionRef`、`ResolvedRevision`、`RepositoryEntry`、`FileContent`、`TextSearchQuery/Hit`、`CommitInfo`、`FileHistoryEntry`、`BlameEntry`、`DiffResult`、`RepositoryLimits/Policy`を標準libraryだけで定義する。Adapter境界で生文字列pathを`RepositoryPath`へ検証・正規化する。
 
 ## HTTP Tool と Agent 境界
 

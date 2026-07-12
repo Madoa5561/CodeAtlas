@@ -18,11 +18,12 @@
 
 完了条件: clean checkout から lint/type/test が再現可能。
 
-## M2: Read-only Repository Slice
+## M2: Read-only Repository Slice（完了）
 
 - Repository Port と Local Git Adapter
 - root containment、安全な file/tree 読み取り
 - ripgrep、Git 履歴、secret/binary/size exclusion
+- built-in Repository Plugin、SHA固定snapshot、Python fallback
 
 完了条件: fixture repository を SHA 固定で tree/read/search できる。
 

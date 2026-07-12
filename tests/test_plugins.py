@@ -4,6 +4,11 @@ from dataclasses import dataclass, field
 
 import pytest
 
+from codeatlas.adapters.repository.plugin import (
+    LOCAL_REPOSITORY_CAPABILITY,
+    LocalGitRepositoryPlugin,
+)
+from codeatlas.config.settings import RepositorySettings
 from codeatlas.plugin_api import (
     CapabilityConflictError,
     PluginCapability,
@@ -234,3 +239,49 @@ async def test_rollback_collects_stop_failures_and_continues() -> None:
         ("codeatlas.first", "stop"),
     ]
     assert all("lifecycle-secret" not in repr(failure) for failure in captured.value.failures)
+
+
+@pytest.mark.asyncio
+async def test_builtin_local_repository_plugin_policy_and_lifecycle() -> None:
+    """The local provider is an explicit built-in with one stable capability."""
+    plugin = LocalGitRepositoryPlugin.from_settings(RepositorySettings())
+    assert plugin.manifest.origin is PluginOrigin.BUILT_IN
+    assert plugin.manifest.capabilities[0].capability_id == LOCAL_REPOSITORY_CAPABILITY
+    registry = PluginRegistry(api_version="0.1.0")
+    registry.register(plugin)
+    assert registry.resolve(LOCAL_REPOSITORY_CAPABILITY) is plugin
+    await registry.start_all()
+    assert plugin.started is True
+    await registry.stop_all()
+    assert plugin.started is False
+
+
+def test_empty_allowlist_disables_local_repository_plugin() -> None:
+    """An explicit deny-all policy also rejects the built-in repository provider."""
+    registry = PluginRegistry(api_version="0.1.0", allowlist=())
+    plugin = LocalGitRepositoryPlugin.from_settings(RepositorySettings())
+    with pytest.raises(PluginNotAllowedError):
+        registry.register(plugin)
+
+
+def test_local_repository_capability_conflict_is_rejected() -> None:
+    """No second provider can silently replace the built-in local capability."""
+    registry = PluginRegistry(
+        api_version="0.1.0",
+        allowlist=("codeatlas.repository.local-git", "example.repository"),
+    )
+    registry.register(LocalGitRepositoryPlugin.from_settings(RepositorySettings()))
+    conflicting = make_plugin(
+        "example.repository",
+        origin=PluginOrigin.THIRD_PARTY,
+        capability_name=None,
+    )
+    conflicting.manifest = PluginManifest(
+        "example.repository",
+        "1.0.0",
+        "0.1.0",
+        "0.1.0",
+        (PluginCapability("repository", "local-git", "1.0.0"),),
+    )
+    with pytest.raises(CapabilityConflictError):
+        registry.register(conflicting)

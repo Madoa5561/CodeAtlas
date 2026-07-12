@@ -24,6 +24,16 @@ docker compose --profile qdrant up -d
 
 M1のCodeAtlasはQdrantへ接続しない。profileの起動は将来構成のcontainer検証用途だけである。
 
+M2でlocal repositoryをcontainerから利用する場合は、管理者が対象directoryだけを明示的にread-only mountする。Compose既定構成はhost repositoryをmountしない。
+
+```yaml
+services:
+  codeatlas:
+    volumes:
+      - codeatlas-data:/app/data
+      - /approved/repository:/repositories/project:ro
+```
+
 ## Development Difference
 
 開発ではDockerへsourceをmountせず、hostの`venv`とeditable installを使用する。production-style imageはwheelをbuilder stageで生成し、test/dev依存をruntime imageへ含めない。
