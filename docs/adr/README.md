@@ -21,3 +21,6 @@
 | [0017](0017-tree-sitter-grammar-versions.md) | Accepted | Tree-sitter grammar version管理 |
 | [0018](0018-incremental-file-identity.md) | Accepted | incremental file/symbol identity |
 | [0019](0019-sqlite-source-of-truth.md) | Accepted | SQLiteをM3 source of truthとする方針 |
+| [0020](0020-agent-pipeline-implementation.md) | Accepted | M4 Agent Pipelineの実装方式 |
+| [0021](0021-discord-interaction-and-conversation.md) | Accepted | M5 Discord Adapterと会話状態の永続化 |
+| [0022](0022-release-and-deployment-0-1-0.md) | Accepted | 0.1.0の配布・デプロイ方式 |

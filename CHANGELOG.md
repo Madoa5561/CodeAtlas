@@ -1,11 +1,30 @@
 # Changelog
 
-このプロジェクトは[Keep a Changelog](https://keepachangelog.com/en/1.1.0/)の形式とSemantic Versioningを採用予定です。
+このプロジェクトは[Keep a Changelog](https://keepachangelog.com/en/1.1.0/)の形式とSemantic Versioningを採用します。
 
 ## [Unreleased]
 
+### Planned
+
+- M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
+- M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
+
+## [0.1.0] - 2026-10-25
+
 ### Added
 
+- M5 Discord Forum adapter: 新規投稿の自動回答、thread継続会話、mention/reply policy、typing、code fenceを壊さない分割送信、rate limit委譲、安全なエラー表示
+- M5 durable conversation memory: SQLite `conversations`/`conversation_messages`/`interaction_records`/`conversation_locks`、atomic idempotency claim、crash recovery、thread lock、retention purge
+- M4 five-stage Agent Pipeline: deterministic Planner、Tool Retriever、Evidence Ranker、grounded Reasoner、Citation Composer、budget/deadline Orchestrator
+- M4 Ollama Model Provider: canonical tool call正規化、JSON mode、thinking control、bounded retry、degraded mode、prompt/secret非漏洩
+- M4 read-only Tool群 21個: repository、tree/file、text/code search、symbol/definition/reference、callers/callees、dependencies、commit/history/blame/diff
+- M4 SQLite index query adapter: symbol、relation、textのbounded read-only query
+- M4 citation付き回答: repository、commit SHA、path、行番号、symbol、検索方法、確信度、不明点を明示
+- M4 prompt injection境界: repository contentをuntrusted envelopeとして分離し、modelのcitationをevidenceと照合
+- M5 diagnostic CLI `codeatlas-ask`（Discordなしで同じcoreを利用）
+- M5 `codeatlas-admin conversations purge`による保持期間ベースの削除
+- M4/M5 ADR-0020、ADR-0021、ADR-0022とTools/Discord Behavior/Deployment文書
+- GitHub Actionsのcontainer build検証、tag起点のGHCR image publishとGitHub Release成果物添付
 - M3 SQLAlchemy/Alembic/SQLite schemaと明示migration CLI
 - immutable staging generation、atomic active切替、rollback、lease/stale recovery
 - safe UTF-8本文、file version、symbol、import/export/reference relation永続化
@@ -22,12 +41,22 @@
 - structlogによるJSON/console loggingとsecret redaction
 - 安全な共通例外体系
 - Plugin Manifest、Capability、Registry、lifecycle rollback
-- Composition Rootとgraceful shutdown foundation process
+- Composition Rootとgraceful shutdown
 - pytest、Ruff、mypy、coverage、package buildのGitHub Actions
 - 非root Docker imageとQdrantを任意profileにしたDocker Compose
 
+### Changed
+
+- Agent回答のcitationはLLMではなくTool evidenceから生成する方式にした
+- Discord pluginは`CODEATLAS_DISCORD__ENABLED=false`でcredentialなしに起動できる
+- Composeをread-only root filesystem、tmpfs、host Ollama接続、release image指定へ更新した
+
 ### Security
 
+- Toolのstrict argument validation、tool allowlist、repository scope authorization、timeout、payload上限
+- prompt injection耐性test、invented citationの破棄、model failure時の安全なfallback
+- Discordの重複event排除、thread排他、busy応答のsafe message化、message content/tokenの非log
+- Ollama/HTTPのcredentialed URL拒否、proxy環境変数の無視、provider errorのsanitize
 - staging失敗・cancel時の旧active generation維持
 - unsafe/secret/binary contentのSQLite非保存とactivation前validation
 - repository単位のprocess内lockとSQLite lease

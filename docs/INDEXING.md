@@ -27,3 +27,7 @@ Safe UTF-8 text is stored in SQLite under the M2 file limit. This is basic leak 
 ## Incremental Indexing
 
 The previous active generation is compared by normalized path and Git object ID. Unchanged bundles are copied into staging with commit-bound symbol IDs re-derived. Added and modified files are reread and reparsed. Deleted files are absent. Parser or policy fingerprint changes disable reuse.
+
+## Read-only Query
+
+`SqliteIndexQuery` exposes the active generation to M4 tools without mutating state. Each connection sets `query_only=ON`. It supports active snapshot lookup, file/content reads, symbol search by exact name, qualified-name suffix, kind, and path prefix, bounded text search with 1-based line and 0-based column excerpts, and relation queries by kind, target, or source symbol. All queries return full commit SHAs and are bounded by `RetrievalLimits`. Missing active generations produce a safe `not_found` tool outcome rather than falling back to working-tree content.

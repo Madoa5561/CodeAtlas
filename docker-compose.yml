@@ -2,17 +2,29 @@ name: codeatlas
 
 services:
   codeatlas:
+    image: ghcr.io/madoa5561/codeatlas:${CODEATLAS_IMAGE_TAG:-0.1.0}
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - path: .env
+        required: false
     environment:
       CODEATLAS_APPLICATION__ENVIRONMENT: production
       CODEATLAS_LOGGING__FORMAT: json
       CODEATLAS_DATABASE__URL: sqlite:////app/data/codeatlas.db
       CODEATLAS_QDRANT__ENABLED: "false"
       CODEATLAS_QDRANT__URL: http://qdrant:6333
+      CODEATLAS_OLLAMA__BASE_URL: ${CODEATLAS_OLLAMA__BASE_URL:-http://host.docker.internal:11434}
+    extra_hosts:
+      - host.docker.internal:host-gateway
     volumes:
       - codeatlas-data:/app/data
+      # Mount only explicitly approved repositories read-only, for example:
+      # - /approved/repositories/linejs:/repositories/linejs:ro
+    read_only: true
+    tmpfs:
+      - /tmp
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

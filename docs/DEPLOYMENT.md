@@ -1,59 +1,139 @@
 # Deployment
 
-## M3 Scope
+## 0.1.0 Scope
 
-Container processはfoundation lifecycleを実行する。M3のSQLite migration/indexingは`codeatlas-admin`による明示管理操作であり、service起動時に自動実行しない。HTTP server、Discord、Qdrant接続は提供しない。
+0.1.0 は M4（Agent + Ollama）と M5（Discord Forum）までのMVPである。次は含まない。
 
-## Production-style Compose
+- GitHub App / Webhook / PR / Issue Tool
+- Qdrant / Vector Search / Hybrid Retrieval
+- Web API / 管理画面 / MCP / VS Code 拡張
+- Thrift parser / 確定 Call Graph
+
+単一の `codeatlas` container と host 上の Ollama で構成する。SQLite が source of truth である。
+
+## Prerequisites
+
+- Docker Engine と Docker Compose plugin
+- Ollama（省略可。無効時は deterministic degraded mode）
+- Discord Bot token と Forum channel ID（Discord を使う場合）
+- 解析対象 repository の local clone（read-only mount 用）
+
+## Configuration
+
+```powershell
+Copy-Item .env.example .env
+```
+
+`.env` は Git 管理外である。最低限、次を設定する。
+
+```text
+CODEATLAS_REPOSITORY__REGISTERED_PATHS=["/repositories/linejs"]
+CODEATLAS_OLLAMA__ENABLED=true
+CODEATLAS_OLLAMA__MODEL=ornith-1.5-9b:q4_k_m
+CODEATLAS_OLLAMA__BASE_URL=http://host.docker.internal:11434
+CODEATLAS_DISCORD__ENABLED=true
+CODEATLAS_DISCORD__TOKEN=...
+CODEATLAS_DISCORD__FORUM_CHANNEL_ID=123456789012345678
+```
+
+secret は `.env` を配布せず、本番では orchestrator の secret 機構から環境変数として注入する。
+
+## Build and Start
 
 ```powershell
 docker compose build
 docker compose up -d codeatlas
 docker compose ps
-docker compose logs codeatlas
-docker compose down
+docker compose logs -f codeatlas
 ```
 
-imageはUID/GID 10001の非root userで動き、source codeをhost mountしない。SQLite将来利用向けに`codeatlas-data` volumeを`/app/data`へmountする。healthcheckは起動完了時に公開されたPIDの生存状態を検証する。
-
-Qdrant定義は任意profileに隔離される。
+release image を使う場合は build を省略できる。
 
 ```powershell
-docker compose --profile qdrant up -d
+$env:CODEATLAS_IMAGE_TAG="0.1.0"
+docker compose pull
+docker compose up -d codeatlas
 ```
 
-M1のCodeAtlasはQdrantへ接続しない。profileの起動は将来構成のcontainer検証用途だけである。
+container は UID/GID 10001 の非rootで、`read_only`、`no-new-privileges`、`cap_drop: ALL`、`/tmp` tmpfs で動く。書き込み可能なのは `codeatlas-data` volume（`/app/data`）だけである。
 
-M2でlocal repositoryをcontainerから利用する場合は、管理者が対象directoryだけを明示的にread-only mountする。Compose既定構成はhost repositoryをmountしない。
+## Repository Mount and Index
+
+対象 repository は明示承認した directory だけを read-only mount する。
 
 ```yaml
 services:
   codeatlas:
     volumes:
       - codeatlas-data:/app/data
-      - /approved/repository:/repositories/project:ro
+      - /approved/repositories/linejs:/repositories/linejs:ro
 ```
 
-## Development Difference
+`CODEATLAS_REPOSITORY__REGISTERED_PATHS` には container 内 path（`/repositories/linejs`）を書く。
 
-開発ではDockerへsourceをmountせず、hostの`venv`とeditable installを使用する。production-style imageはwheelをbuilder stageで生成し、test/dev依存をruntime imageへ含めない。
-
-## Secrets and Data
-
-- secretはimage、Dockerfile、Composeへ書かない。
-- 必要になった時点でenvironmentまたはsecret managerから注入する。
-- `.env`はGit管理対象外であり、Composeの自動読込にsecretを置く場合も配布しない。
-- migration前に`/app/data/codeatlas.db` volumeをbackupする。downgradeはM3 index tableを削除する破壊的な明示操作である。
-
-## M3 Migration
+初回 migration と index 作成は明示操作である。service 起動時に自動 migration は行わない。
 
 ```powershell
 docker compose run --rm codeatlas codeatlas-admin --json db upgrade
-docker compose run --rm codeatlas codeatlas-admin --json db current
+docker compose run --rm -v C:\work\linejs:/repositories/linejs:ro codeatlas `
+  codeatlas-admin --json index full /repositories/linejs HEAD
+docker compose run --rm codeatlas codeatlas-admin --json index incremental /repositories/linejs HEAD
 ```
 
-Repositoryをcontainerからindexする場合は承認済みdirectoryだけをread-only mountする。SQLite data volumeだけが書込み可能である。
+index 作成には `git` が必要で、image に含まれる。working tree は読まず、解決した commit SHA の tree/blob だけを解析する。index 後に `docker compose up -d` で service を起動する。
 
-## Shutdown
+## Health and Shutdown
 
-SIGTERM/SIGINTでPlugin lifecycleを逆順停止する。shutdown timeoutを超えた場合は停止処理をcancelしてprocessを非zero終了させ、container orchestratorへ失敗を通知する。
+- service は起動完了後に `/tmp/codeatlas-ready` へ PID を公開し、`codeatlas-healthcheck` がその生存を検証する。
+- `SIGTERM`/`SIGINT` で plugin を逆順停止する。shutdown timeout を超えた場合は非zero終了する。
+- schema が head でない、または設定が不正な場合は起動に失敗する。`docker compose logs` に安全なエラーコードだけが出る。
+
+## Ollama
+
+host の Ollama を container から `host.docker.internal` で利用する（Linux は `extra_hosts: host-gateway`、Compose に設定済み）。
+
+```bash
+ollama pull ornith-1.5-9b:q4_k_m
+ollama serve
+```
+
+- Ollama が到達不能でも CodeAtlas は起動し、`degraded` mode で evidence 列挙型の回答を返す。
+- thinking model では `CODEATLAS_OLLAMA__THINK=true` を検討する。reasoning text は回答本文として扱わない。
+- 回答生成は `CODEATLAS_AGENT__DEADLINE_SECONDS` と `CODEATLAS_OLLAMA__TIMEOUT_SECONDS` で制限される。
+
+## Discord
+
+Discord Developer Portal で Bot を作成し、次を設定する。
+
+- Privileged Intent: Message Content Intent を有効化する（Forum 投稿/スレッド本文の取得に必要）
+- 対象 Forum channel の権限: View Channel、Send Messages、Send Messages in Threads、Read Message History
+- `CODEATLAS_DISCORD__FORUM_CHANNEL_ID` に対象 Forum channel ID を設定
+- `CODEATLAS_DISCORD__REPLY_POLICY` は既定 `mention_or_reply`
+
+動作仕様は [DISCORD_BEHAVIOR.md](DISCORD_BEHAVIOR.md) を参照する。Bot の重複 event は SQLite の idempotency ledger で排除し、同一 thread は conversation lock で直列化する。
+
+## Retention and Backup
+
+```powershell
+docker compose run --rm codeatlas codeatlas-admin --json conversations purge --days 30
+```
+
+- `/app/data/codeatlas.db` を migration 前に backup する。
+- downgrade は conversation schema を削除する破壊的操作である。`0001_m3_transactional_index` への downgrade 前に停止と backup を行う。
+- SQLite は安全な source 本文と会話履歴を含むため、volume access と backup を secret 相当の運用境界として扱う。
+
+## Release Artifacts
+
+tag `vX.Y.Z` の push で `.github/workflows/release.yml` が次を実行する。
+
+1. Ruff、mypy、pytest、coverage、package build
+2. GHCR への container image push（`ghcr.io/<owner>/codeatlas:X.Y.Z` と `latest`）
+3. GitHub Release へ sdist/wheel を添付し、release notes を生成
+
+手動で再実行する場合は `workflow_dispatch` に既存 tag を渡す。
+
+## Secrets
+
+- secret を image、Dockerfile、Compose file、GitHub Actions に直書きしない。
+- log には token、password、secret、authorization、api_key と credential 形式の文字列が redaction されるが、そもそも message へ連結しない。
+- Discord token を rotate した場合は container を再起動する。

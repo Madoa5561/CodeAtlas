@@ -49,4 +49,23 @@ M2ではlocal repositoryのpath containment、SHA固定object read、basic secre
 
 M3ではsafe textだけをgeneration-scoped SQLite rowへ保存し、unsafe contentはreason codeだけを保持する。staging validation、partial unique active index、atomic publication、opaque lease、stale recovery、rollbackを実装した。DB safe errorにはSQL、絶対path、source本文を含めない。SQLite file自体は安全なsource本文を含むため、OS permission、volume access、backup、retentionをsecret相当の運用境界として扱う。
 
-SSRF、Prompt InjectionのAgent境界、webhook署名、Qdrant projection整合性は後続の該当機能と同時に実装・testする。QdrantはM3のsource of truthでもpublication対象でもない。mockだけを置いて実装済みとは扱わない。
+## M4 Agent Boundary
+
+- Toolはcatalogに登録された21個のread-only Toolだけで、shell、write、network、repository mutationはない。
+- 引数はPydantic strict model（`extra=forbid`、frozen）で検証し、Tool Executorがtool名allowlist、repository scope、timeout、payload上限を強制する。
+- repository contentはuntrusted envelope（明示delimiter）内でのみReasonerへ渡し、evidence内の命令をsystem instructionとして扱わない。ReasonerはToolを実行できない。
+- citationはTool evidenceのrepository/SHA/path/lineから直接生成し、modelが返したcitation IDは実在evidenceと照合する。invented citationは破棄する。
+- model provider error、invalid JSON、timeoutはextractive fallbackへ変換し、prompt、source、tokenをlogや回答へ出さない。
+- Ollama base URLはuserinfo、query、fragmentを拒否し、HTTP proxy環境変数を無視する。
+
+## M5 Interaction Boundary
+
+- Discord adapterはself/other-bot、対象thread、reply policyを検証し、既処理messageとduplicate interactionを無視する。
+- idempotencyはSQLiteのatomic claim、会話排他はlease付きconversation lockで制御する。crashしたin-progress claimはlease expiry後に再claimできる。
+- 同時thread実行のbusy応答、handler失敗時の応答は安全な文言だけで、例外内容、SQL、path、tokenを含まない。
+- 会話履歴は上限件数と保持期間を持ち、`conversations purge`で削除できる。attachment本文は取得・保存しない。
+- Discord HTTP errorはdiscord.pyのrate limitに従い、safe message以外を送らない。
+
+## Deferred Controls
+
+SSRF（HTTP Tool）、GitHub webhook署名、GitHub App権限、transactional outbox、Qdrant projection整合性、Thrift cross-language linkはM6で該当機能と同時に実装・testする。mockだけを置いて実装済みとは扱わない。

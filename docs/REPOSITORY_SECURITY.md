@@ -4,6 +4,8 @@
 
 Repository paths, files, commit messages, authors, and diffs are untrusted data. They never become system instructions. M2 exposes no shell Tool, Git write command, automatic submodule registration, network operation, or repository mutation.
 
+Registered repository paths are an explicit administrator decision. Because container deployments commonly read admin-approved bind mounts owned by another UID, the bounded Git runner passes `-c safe.directory=*` so Git's ownership check cannot block an already registered read-only path. The command allowlist, path containment, and content policy remain the security boundary; Git still runs only fixed read-only subcommands without a shell.
+
 ## Path Policy
 
 Public operations use typed POSIX-relative `RepositoryPath` values. Absolute, drive, UNC, NUL, backslash, traversal, and `.git` paths are rejected. Filesystem aliases are strictly resolved during registration. Commit tree reads do not follow filesystem symlinks or junctions. Git symlink blobs and submodule entries are reported distinctly and cannot be read as files.

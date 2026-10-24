@@ -96,3 +96,24 @@ Plugin は capability-based registry で明示的にロードし、任意コー�
 ## 一貫性と観測性
 
 SQLiteをsource of truth、Qdrant等を再構築可能なprojectionとする。event envelopeにはevent、correlation、causation、repository、snapshot、plugin IDを持たせる。ログには秘密、repository本文、会話全文を既定で出さない。
+
+## 0.1.0の実装状況
+
+| Component | 実装 | 場所 |
+| --- | --- | --- |
+| Interaction Adapter | Discord、diagnostic CLI | `adapters/discord/`、`entrypoints/cli.py` |
+| Interaction Application Service | idempotency、conversation lock、safe failure | `application/interactions.py` |
+| Agent Orchestrator | budget、deadline、replan、失敗分類 | `application/agent/orchestrator.py` |
+| Planner | deterministic heuristic | `application/agent/planner.py` |
+| Retriever | Tool Executor経由のbounded retrieval | `application/agent/retriever.py` |
+| Evidence Ranker | deterministic scoring/diversity | `application/agent/ranker.py` |
+| Reasoner | Ollama + extractive fallback | `application/agent/reasoner.py` |
+| Response Composer | citation付きcanonical response | `application/agent/composer.py` |
+| Tool Executor | strict validation、scope、timeout、payload上限 | `application/tools/executor.py` |
+| Model Provider | Ollama | `adapters/model/` |
+| Repository Provider | local Git | `adapters/repository/` |
+| Knowledge Graph / Index | SQLite symbols/relations/text | `infrastructure/indexing/` |
+| Conversation Memory | SQLite messages/idempotency/locks | `infrastructure/conversation/` |
+| Composition Root | adapter配線とlifecycle | `runtime.py` |
+
+未実装: FastAPI Web API、MCP、VS Code、GitHub API/Webhook、Qdrant、event outbox、Thrift parser。Composition root以外は具象adapterをimportしない。

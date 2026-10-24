@@ -27,13 +27,14 @@
 
 完了条件: fixture repository を SHA 固定で tree/read/search できる。
 
-## M2.5: Extension Foundation
+## M2.5: Extension Foundation（一部）
 
-- Plugin API、manifest、capability registry、lifecycle
-- Canonical InteractionとUI contract test
-- typed Event、transactional outbox、idempotent dispatcher
+- Interaction Port、`CanonicalInteraction`/`CanonicalResponse`、capability matrix: M5で実装済み
+- Plugin capability registryとlifecycle: 実装済み
+- typed Event、transactional outbox、idempotent dispatcher: 未実装（M6）
+- idempotencyとconversation lockはSQLite ledgerで実装済み
 
-完了条件: application変更なしでfixture UI/pluginを追加でき、event replayが冪等である。
+完了条件のうち「UI/plugin追加」と「同一threadでの冪等性」は満たす。event replay/outboxはM6で実装する。
 
 ## M3: Transactional Indexing（完了）
 
@@ -46,19 +47,21 @@
 
 FTS、Thrift、確定Call/Dependency Graph、Qdrant projectionはM3完了範囲に含めず、後続milestoneで実装する。
 
-## M4: Agent and Ollama
+## M4: Agent and Ollama（完了）
 
 - Model Port、canonical Tool Call、Ollama Adapter
 - Planner/Retriever/Ranker/Reasoner/Composer、conversation memory
+- 21のread-only Repository/Search Tool、SQLite index query
+- prompt injection境界、citation検証、degraded mode
 
-完了条件: fixture 質問に正しい SHA/path/line を含む回答を返す。
+完了条件: fixture質問に正しいSHA/path/lineを含む回答を返す。→ linejs `Client`定義を`packages/linejs/client/client.ts:91`として回答することを実Ollamaで確認済み。
 
-## M5: Discord MVP
+## M5: Discord MVP（完了）
 
 - Forum event、follow-up、mention/reply policy
 - idempotency、thread lock、typing、code-aware split、rate limit
 
-完了条件: Docker Compose でテスト repository への継続会話が成立する。
+完了条件: Docker Composeでテストrepositoryへの継続会話が成立する。→ 実装・offline contract test済み。実Discord環境での最終疎通はdeployment時のtoken設定で行う。
 
 ## M6: GitHub と Hybrid Retrieval
 
@@ -73,6 +76,6 @@ FTS、Thrift、確定Call/Dependency Graph、Qdrant projectionはM3完了範囲�
 
 ## リリースゲート
 
-- `0.1.0`: M5 と security test を満たす。
+- `0.1.0`（完了）: M5 と security test を満たす。
 - public beta: M6、quota、データ削除、脆弱性報告手順を満たす。
 - stable: compatibility、migration/backup、負荷/復旧試験を満たす。
