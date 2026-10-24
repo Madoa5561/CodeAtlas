@@ -57,7 +57,7 @@ from codeatlas.infrastructure.indexing.models import (
     ValidationResultRow,
 )
 
-SCHEMA_REVISION = "0001_m3_transactional_index"
+SCHEMA_REVISION = "0002_m4_conversation"
 
 
 def _now() -> str:

@@ -35,6 +35,10 @@ class RepositoryRegistryPort(Protocol):
         """Return a registered descriptor."""
         ...
 
+    def list_all(self) -> tuple[RepositoryDescriptor, ...]:
+        """Return every registered descriptor in stable repository-ID order."""
+        ...
+
 
 class RepositoryProviderPort(Protocol):
     """Typed read-only operations available to application services."""

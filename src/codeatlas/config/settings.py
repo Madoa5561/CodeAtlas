@@ -55,6 +55,40 @@ class DatabaseSettings(BaseModel):
         return self
 
 
+class ReplyPolicy(StrEnum):
+    """Which ordinary Discord messages receive an automatic answer."""
+
+    ALL = "all"
+    MENTION = "mention"
+    REPLY = "reply"
+    MENTION_OR_REPLY = "mention_or_reply"
+
+
+class AgentSettings(BaseModel):
+    """Budgets and presentation policy for the five-stage agent pipeline."""
+
+    max_iterations: int = Field(default=3, ge=1, le=10)
+    max_tool_calls: int = Field(default=12, ge=1, le=100)
+    deadline_seconds: float = Field(default=90.0, ge=5.0, le=600.0)
+    max_evidence: int = Field(default=12, ge=1, le=50)
+    max_plan_steps: int = Field(default=6, ge=1, le=20)
+    max_response_chars: int = Field(default=6_000, ge=500, le=20_000)
+    temperature: float = Field(default=0.2, ge=0.0, le=2.0)
+    max_output_tokens: int = Field(default=1_200, ge=1, le=32_000)
+    model_timeout_seconds: float = Field(default=60.0, ge=1.0, le=600.0)
+    use_model_planner: bool = False
+    fallback_without_model: bool = True
+
+
+class ConversationSettings(BaseModel):
+    """Conversation memory, idempotency, and retention policy."""
+
+    history_limit: int = Field(default=12, ge=1, le=100)
+    retention_days: int = Field(default=30, ge=1, le=3650)
+    thread_lock_wait_seconds: float = Field(default=20.0, ge=0.1, le=300.0)
+    thread_lock_lease_seconds: float = Field(default=300.0, ge=30.0, le=3_600.0)
+
+
 class QdrantSettings(BaseModel):
     """Qdrant connection settings; no client is created in M1."""
 
@@ -65,12 +99,17 @@ class QdrantSettings(BaseModel):
 
 
 class OllamaSettings(BaseModel):
-    """Ollama settings; model connectivity is not implemented in M1."""
+    """Ollama chat provider settings."""
 
     enabled: bool = False
     base_url: HttpUrl = HttpUrl("http://localhost:11434")
     model: str | None = Field(default=None, min_length=1, max_length=200)
     timeout_seconds: float = Field(default=60.0, ge=1.0, le=600.0)
+    keep_alive: str = Field(default="5m", max_length=32)
+    think: bool = False
+    max_retries: int = Field(default=2, ge=0, le=5)
+    retry_backoff_seconds: float = Field(default=0.5, ge=0.0, le=10.0)
+    num_ctx: int = Field(default=8_192, ge=2_048, le=131_072)
 
     @model_validator(mode="after")
     def require_model_when_enabled(self) -> OllamaSettings:
@@ -81,11 +120,18 @@ class OllamaSettings(BaseModel):
 
 
 class DiscordSettings(BaseModel):
-    """Discord settings; the Discord adapter is not implemented in M1."""
+    """Discord Forum adapter and response presentation settings."""
 
     enabled: bool = False
     token: SecretStr | None = None
     forum_channel_id: int | None = Field(default=None, ge=1)
+    reply_policy: ReplyPolicy = ReplyPolicy.MENTION_OR_REPLY
+    history_limit: int = Field(default=12, ge=1, le=100)
+    typing_interval_seconds: float = Field(default=8.0, ge=1.0, le=60.0)
+    max_response_chars: int = Field(default=1_900, ge=200, le=2_000)
+    locale: str = Field(default="ja", max_length=16)
+    ignore_bots: bool = True
+    answer_new_forum_posts: bool = True
 
     @model_validator(mode="after")
     def require_credentials_when_enabled(self) -> DiscordSettings:
@@ -144,8 +190,9 @@ class IndexingLimits(BaseModel):
 
 
 class RepositorySettings(BaseModel):
-    """Safety limits for read-only local repository operations."""
+    """Safety limits and startup registrations for read-only local repositories."""
 
+    registered_paths: tuple[Path, ...] = ()
     git_executable: str = Field(default="git", pattern=r"^git(?:\.exe)?$")
     ripgrep_executable: str = Field(default="rg", pattern=r"^rg(?:\.exe)?$")
     max_repository_bytes: int = Field(default=2 * 1024**3, ge=1024**2, le=20 * 1024**3)
@@ -181,6 +228,8 @@ class CodeAtlasSettings(BaseSettings):
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     indexing: IndexingLimits = Field(default_factory=IndexingLimits)
     repository: RepositorySettings = Field(default_factory=RepositorySettings)
+    agent: AgentSettings = Field(default_factory=AgentSettings)
+    conversation: ConversationSettings = Field(default_factory=ConversationSettings)
 
 
 def load_settings(env_file: Path | str | None = None) -> CodeAtlasSettings:

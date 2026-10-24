@@ -130,6 +130,7 @@ async def test_fixed_git_controls_are_passed(
     assert f"core.attributesFile={os.devnull}" in captured_arguments
     assert f"core.hooksPath={os.devnull}" in captured_arguments
     assert "core.fsmonitor=false" in captured_arguments
+    assert "safe.directory=*" in captured_arguments
     assert captured_keywords["stdin"] is asyncio.subprocess.DEVNULL
     environment = captured_keywords["env"]
     assert isinstance(environment, dict)

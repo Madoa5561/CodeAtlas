@@ -1,28 +1,43 @@
-"""Long-running M1 process with graceful signal-driven shutdown."""
+"""Long-running CodeAtlas process with graceful signal-driven shutdown."""
 
 from __future__ import annotations
 
 import asyncio
+import logging
 import signal
 from pathlib import Path
+from typing import Protocol
 
-from codeatlas.application.container import ApplicationContainer
-from codeatlas.bootstrap import create_application
+from codeatlas.config.settings import CodeAtlasSettings, load_settings
 from codeatlas.infrastructure.health import (
     HEALTH_STATE_PATH,
     clear_process_ready,
     mark_process_ready,
 )
+from codeatlas.runtime import CodeAtlasRuntime
+
+logger = logging.getLogger(__name__)
 
 
-async def stop_application(application: ApplicationContainer, timeout_seconds: float) -> None:
+class ManagedApplication(Protocol):
+    """Structural lifecycle contract shared by tests and the real runtime."""
+
+    @property
+    def settings(self) -> CodeAtlasSettings: ...
+
+    async def start(self) -> None: ...
+
+    async def stop(self) -> None: ...
+
+
+async def stop_application(application: ManagedApplication, timeout_seconds: float) -> None:
     """Stop the application within its configured graceful-shutdown deadline."""
     async with asyncio.timeout(timeout_seconds):
         await application.stop()
 
 
 async def run_service(
-    application: ApplicationContainer,
+    application: ManagedApplication,
     stop_requested: asyncio.Event,
     *,
     health_path: Path = HEALTH_STATE_PATH,
@@ -56,16 +71,24 @@ def install_signal_handlers(
 
 
 async def serve() -> None:
-    """Run the foundation process until an operating-system stop signal arrives."""
+    """Run the M4/M5 runtime until an operating-system stop signal arrives."""
     stop_requested = asyncio.Event()
     loop = asyncio.get_running_loop()
     install_signal_handlers(stop_requested, loop)
-    await run_service(create_application(), stop_requested)
+    runtime = CodeAtlasRuntime.create(load_settings())
+    await run_service(runtime, stop_requested)
 
 
 def main() -> None:
     """Run the asynchronous CodeAtlas service lifecycle."""
-    asyncio.run(serve())
+    try:
+        asyncio.run(serve())
+    except Exception as error:
+        logger.error(
+            "service_failed",
+            extra={"error_type": type(error).__name__},
+        )
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":

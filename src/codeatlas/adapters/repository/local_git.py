@@ -78,6 +78,11 @@ class LocalGitRepositoryProvider:
         self._policy = policy
         self._ripgrep_executable = ripgrep_executable
 
+    @property
+    def registry(self) -> RepositoryRegistryPort:
+        """Return the registry so the composition root can share it with tools."""
+        return self._registry
+
     async def register_local_repository(self, location: RepositoryLocation) -> RepositoryDescriptor:
         """Validate and register one canonical non-bare, non-submodule Git repository."""
         try:

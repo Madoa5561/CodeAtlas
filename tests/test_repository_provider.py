@@ -482,6 +482,7 @@ async def test_search_cancellation_cleans_snapshot(
         await asyncio.Event().wait()
         return ()
 
+    monkeypatch.setattr(shutil, "which", lambda _executable: "/usr/bin/rg")
     monkeypatch.setattr(provider, "_search_ripgrep", wait_forever)
     task = asyncio.create_task(provider.search_text(head, TextSearchQuery("needle")))
     await asyncio.sleep(0.05)

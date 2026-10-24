@@ -1,14 +1,15 @@
-"""Alembic environment for the explicit M3 SQLite migration workflow."""
+"""Alembic environment for the explicit CodeAtlas SQLite migration workflow."""
 
 from __future__ import annotations
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from codeatlas.infrastructure.indexing.models import Base
+from codeatlas.infrastructure.conversation.models import Base as ConversationBase
+from codeatlas.infrastructure.indexing.models import Base as IndexBase
 
 config = context.config
-target_metadata = Base.metadata
+target_metadata = [IndexBase.metadata, ConversationBase.metadata]
 
 
 def run_migrations_offline() -> None:

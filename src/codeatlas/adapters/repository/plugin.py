@@ -19,6 +19,7 @@ class LocalGitRepositoryPlugin:
     """Lifecycle owner for the built-in local Git repository provider."""
 
     provider: LocalGitRepositoryProvider
+    registry: InMemoryRepositoryRegistry
     started: bool = False
     manifest = PluginManifest(
         plugin_id="codeatlas.repository.local-git",
@@ -48,13 +49,14 @@ class LocalGitRepositoryPlugin:
             timeout_seconds=settings.command_timeout_seconds,
             output_limit_bytes=settings.max_command_output_bytes,
         )
+        registry = InMemoryRepositoryRegistry()
         provider = LocalGitRepositoryProvider(
-            InMemoryRepositoryRegistry(),
+            registry,
             runner,
             policy,
             ripgrep_executable=settings.ripgrep_executable,
         )
-        return cls(provider)
+        return cls(provider, registry)
 
     async def start(self) -> None:
         """Mark the in-process provider available without external connections."""

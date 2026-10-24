@@ -140,3 +140,66 @@ class InvalidRevisionError(InputValidationError):
 
     default_safe_message = "The requested revision is invalid or unavailable."
     code = "invalid_revision"
+
+
+class AgentError(CodeAtlasError):
+    """The agent pipeline could not complete safely."""
+
+    default_safe_message = "The question could not be answered."
+    code = "agent_error"
+
+
+class AgentBudgetExceededError(AgentError):
+    """The agent exceeded its iteration, tool, or deadline budget."""
+
+    default_safe_message = "The investigation exceeded its configured budget."
+    code = "agent_budget_exceeded"
+
+
+class ModelProviderError(ProviderError):
+    """A model provider failed without exposing prompt or provider internals."""
+
+    default_safe_message = "The language model is temporarily unavailable."
+    code = "model_provider_error"
+
+
+class ModelResponseError(ModelProviderError):
+    """A model provider returned a response that violates the canonical contract."""
+
+    default_safe_message = "The language model returned an unusable response."
+    code = "model_response_error"
+
+
+class ToolExecutionError(CodeAtlasError):
+    """A tool call failed through a classified, safe error."""
+
+    default_safe_message = "A retrieval tool failed."
+    code = "tool_execution_error"
+
+
+class ToolNotFoundError(ToolExecutionError):
+    """The requested tool is not registered or not authorized."""
+
+    default_safe_message = "The requested tool is unavailable."
+    code = "tool_not_found"
+
+
+class ConversationBusyError(CodeAtlasError):
+    """Another interaction currently owns the conversation lock."""
+
+    default_safe_message = "This conversation is busy; please retry shortly."
+    code = "conversation_busy"
+
+
+class ConversationStoreError(CodeAtlasError):
+    """Conversation persistence or migration state is unusable."""
+
+    default_safe_message = "Conversation storage is unavailable."
+    code = "conversation_store_error"
+
+
+class IndexQueryError(CodeAtlasError):
+    """The retrieval index could not answer a bounded query."""
+
+    default_safe_message = "The code index is unavailable."
+    code = "index_query_error"

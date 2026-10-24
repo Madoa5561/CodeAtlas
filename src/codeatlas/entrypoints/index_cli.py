@@ -6,7 +6,7 @@ import argparse
 import asyncio
 import json
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from codeatlas import API_VERSION
@@ -17,6 +17,7 @@ from codeatlas.application.indexing import IndexingPolicy, TransactionalIndexing
 from codeatlas.config.settings import CodeAtlasSettings, load_settings
 from codeatlas.domain.indexing_models import IndexGenerationId, IndexingRequest
 from codeatlas.domain.repository_models import RepositoryId, RepositoryLocation
+from codeatlas.infrastructure.conversation.store import SqliteConversationStore
 from codeatlas.infrastructure.indexing.migrations import (
     current_revision,
     downgrade_database,
@@ -52,6 +53,10 @@ def _parser() -> argparse.ArgumentParser:
     rollback.add_argument("generation_id")
     stale = index_commands.add_parser("mark-stale")
     stale.add_argument("--before", required=True)
+    conversations = subcommands.add_parser("conversations")
+    conversation_commands = conversations.add_subparsers(dest="conversation_command", required=True)
+    purge = conversation_commands.add_parser("purge")
+    purge.add_argument("--days", type=int, default=None)
     return parser
 
 
@@ -125,6 +130,23 @@ async def _run_index(args: argparse.Namespace, settings: CodeAtlasSettings) -> o
     raise ValueError("unsupported index command")
 
 
+async def _run_conversations(args: argparse.Namespace, settings: CodeAtlasSettings) -> object:
+    store = SqliteConversationStore(
+        settings.database.url,
+        busy_timeout_seconds=settings.database.busy_timeout_seconds,
+        claim_lease_seconds=settings.conversation.thread_lock_lease_seconds,
+    )
+    try:
+        await store.assert_schema_current()
+        days = args.days if args.days is not None else settings.conversation.retention_days
+        if days < 1:
+            raise ValueError("retention days must be positive")
+        cutoff = datetime.now(UTC) - timedelta(days=days)
+        return {"purged_conversations": await store.purge_history_before(cutoff)}
+    finally:
+        await store.close()
+
+
 def _json_default(value: object) -> object:
     if hasattr(value, "value"):
         return value.value
@@ -150,7 +172,11 @@ def main() -> None:
         else:
             result = {"revision": current_revision(settings.database.url)}
     else:
-        result = asyncio.run(_run_index(args, settings))
+        result = asyncio.run(
+            _run_conversations(args, settings)
+            if args.command == "conversations"
+            else _run_index(args, settings)
+        )
     if args.json_output:
         print(json.dumps(result, default=_json_default, sort_keys=True))
     else:

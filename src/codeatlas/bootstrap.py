@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from pathlib import Path
+from typing import TextIO
 
 from pydantic import ValidationError as PydanticValidationError
 
@@ -21,6 +22,7 @@ def create_application(
     settings: CodeAtlasSettings | None = None,
     env_file: Path | str | None = None,
     plugins: Iterable[PluginLifecycle] = (),
+    log_stream: TextIO | None = None,
 ) -> ApplicationContainer:
     """Build an application container without starting external connections."""
     try:
@@ -28,7 +30,7 @@ def create_application(
     except PydanticValidationError as error:
         raise ConfigurationError(internal_cause=error) from error
 
-    configure_logging(resolved_settings.logging)
+    configure_logging(resolved_settings.logging, stream=log_stream)
     registry = PluginRegistry(
         api_version=API_VERSION,
         allowlist=resolved_settings.security.plugin_allowlist,

@@ -34,3 +34,7 @@ class InMemoryRepositoryRegistry:
             raise NotFoundError(
                 "The repository is not registered.", internal_cause=error
             ) from error
+
+    def list_all(self) -> tuple[RepositoryDescriptor, ...]:
+        """Return every descriptor sorted by opaque repository ID for stable catalogs."""
+        return tuple(self._by_id[key] for key in sorted(self._by_id, key=lambda item: item.value))

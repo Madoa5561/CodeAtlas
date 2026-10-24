@@ -109,6 +109,8 @@ def configure_logging(settings: LoggingSettings, *, stream: TextIO | None = None
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(settings.level)
+    logging.getLogger("alembic").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
     structlog.configure(
         processors=[*shared_processors, structlog.stdlib.ProcessorFormatter.wrap_for_formatter],

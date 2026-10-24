@@ -102,6 +102,8 @@ class SafeGitRunner:
             "core.fsmonitor=false",
             "-c",
             "credential.helper=",
+            "-c",
+            "safe.directory=*",
             subcommand.value,
             *arguments,
         )
