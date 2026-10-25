@@ -7,9 +7,11 @@ anyio==4.15.1
 attrs==26.1.0
 build==1.2.2.post1
 certifi==2026.10.23
+click==8.5.0
 colorama==0.4.6 ; platform_system == "Windows"
 coverage==7.6.10
 discord.py==2.7.1
+fastapi==0.162.0
 frozenlist==1.8.0
 greenlet==3.1.1
 h11==0.16.0
@@ -35,10 +37,13 @@ python-dotenv==1.0.1
 ruff==0.9.3
 setuptools==75.8.0
 SQLAlchemy==2.0.37
+starlette==1.10.0
 structlog==24.4.0
 tree-sitter==0.24.0
 tree-sitter-javascript==0.23.1
 tree-sitter-typescript==0.23.2
 typing-extensions==4.16.0
+typing-inspection==0.4.4
+uvicorn==0.54.0
 wheel==0.45.1
 yarl==1.25.1

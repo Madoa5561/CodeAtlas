@@ -62,7 +62,7 @@ from codeatlas.infrastructure.indexing.models import (
     ValidationResultRow,
 )
 
-SCHEMA_REVISION = "0003_m6_fts"
+SCHEMA_REVISION = "0004_m6_webhook"
 
 
 def _now() -> str:

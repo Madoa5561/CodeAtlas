@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codeatlas"
-version = "0.2.0"
+version = "0.2.1"
 description = "Evidence-based code intelligence for GitHub repositories"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -19,6 +19,7 @@ classifiers = [
 dependencies = [
   "alembic>=1.14,<2",
   "discord.py>=2.5,<3",
+  "fastapi>=0.115,<1",
   "httpx>=0.28,<1",
   "pydantic>=2.10,<3",
   "pydantic-settings>=2.7,<3",
@@ -27,6 +28,7 @@ dependencies = [
   "tree-sitter>=0.24,<0.26",
   "tree-sitter-javascript>=0.23,<0.26",
   "tree-sitter-typescript>=0.23,<0.24",
+  "uvicorn>=0.34,<1",
 ]
 
 [project.optional-dependencies]

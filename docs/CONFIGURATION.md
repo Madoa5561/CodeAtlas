@@ -22,6 +22,7 @@ process environmentが`.env`より優先される。不正な型、範囲外の�
 | `OLLAMA` | base URL、model、retry、timeout、thinking | M4で利用 |
 | `DEEPSEEK` | API key、base URL、model、retry、thinking | 利用（Ollamaと排他） |
 | `DISCORD` | enabled、token、forum ID、reply policy、表示 | M5で利用 |
+| `API` | ローカルFastAPI server、bind、body上限 | M6で利用 |
 | `GITHUB` | enabled、token、webhook secret、API URL | M6まで未接続 |
 | `SECURITY` | plugin allowlist、read-only、HTTP上限 | 利用 |
 | `INDEXING` | file/repository/concurrency/timeout/parser/failure上限 | M3で利用 |
@@ -83,9 +84,24 @@ CODEATLAS_DEEPSEEK__THINKING=false
 - 到達不能・timeout・rate limit時はbounded retry後、あるいはextractive fallbackで`partial`回答になる。
 - `/models`へのbounded probeで起動時availabilityを記録する（到達不能でも起動は継続）。
 
-## Discord
+## Web API and GitHub Webhook
 
 ```text
+CODEATLAS_API__ENABLED=true
+CODEATLAS_API__HOST=127.0.0.1
+CODEATLAS_API__PORT=8080
+CODEATLAS_API__MAX_BODY_BYTES=1000000
+CODEATLAS_API__ALLOW_ASK=true
+CODEATLAS_GITHUB__WEBHOOK_SECRET=...
+```
+
+- APIは既定で無効。`/healthz`、`/repositories`、`/ask`、`/webhooks/github`を提供する。
+- `/ask`は`repository_id`で単一repositoryへscopeできる。Agent/Tool/conversation lockはDiscordと同じcoreを使う。
+- Webhookは`X-Hub-Signature-256`をHMAC-SHA256で検証し、`X-GitHub-Delivery`で冪等化する。payload本文は保存しない。
+- `CODEATLAS_GITHUB__WEBHOOK_SECRET`未設定時はWebhookを503で拒否する。
+- 公開ネットワークへ直接bindせず、localhostまたはreverse proxy配下で使う。認証はローカル管理者境界を前提とする。
+
+## Discord
 CODEATLAS_DISCORD__ENABLED=true
 CODEATLAS_DISCORD__TOKEN=...
 CODEATLAS_DISCORD__FORUM_CHANNEL_ID=123456789012345678

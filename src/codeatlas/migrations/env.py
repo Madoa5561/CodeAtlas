@@ -7,9 +7,10 @@ from sqlalchemy import engine_from_config, pool
 
 from codeatlas.infrastructure.conversation.models import Base as ConversationBase
 from codeatlas.infrastructure.indexing.models import Base as IndexBase
+from codeatlas.infrastructure.webhook.models import WebhookBase
 
 config = context.config
-target_metadata = [IndexBase.metadata, ConversationBase.metadata]
+target_metadata = [IndexBase.metadata, ConversationBase.metadata, WebhookBase.metadata]
 
 
 def run_migrations_offline() -> None:

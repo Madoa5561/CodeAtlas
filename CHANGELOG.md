@@ -9,6 +9,19 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.2.1] - 2026-10-25
+
+### Added
+
+- M6 Web API: FastAPI `/healthz`、`/repositories`、`/ask`（repository scope対応）と組み込みuvicorn lifecycle
+- M6 GitHub Webhook receiver: `X-Hub-Signature-256` HMAC検証、payload size上限、`X-GitHub-Delivery` によるSQLite冪等ledger
+- migration `0004_m6_webhook` と `webhook_deliveries` テーブル
+- API/Webhook設定（`CODEATLAS_API__*`）とドキュメント、ADR-0026
+
+### Changed
+
+- `InteractionApplicationService` がrepository scopeを受け取れるようになり、HTTP APIから単一repositoryへ質問を限定できる
+
 ## [0.2.0] - 2026-10-25
 
 ### Added

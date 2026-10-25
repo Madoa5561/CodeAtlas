@@ -27,3 +27,4 @@
 | [0023](0023-deepseek-openai-compatible-provider.md) | Accepted | DeepSeekをOpenAI互換Providerとして追加 |
 | [0024](0024-discord-rendering-and-export-verification.md) | Accepted | Discord回答の単一描画とexport確認 |
 | [0025](0025-fts5-bm25-and-graph-traversal.md) | Accepted | SQLite FTS5/BM25 Lexical ProjectionとGraph Traversal |
+| [0026](0026-local-web-api-and-github-webhook.md) | Accepted | ローカルWeb APIとGitHub Webhook受信 |

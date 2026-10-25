@@ -27,6 +27,7 @@ from codeatlas.domain.interaction_models import (
     ResponseBlockKind,
     ResponseStatus,
 )
+from codeatlas.domain.repository_models import RepositoryId
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,12 @@ class InteractionApplicationService:
         self._lock_lease_seconds = lock_lease_seconds
         self._clock = clock
 
-    async def handle(self, interaction: CanonicalInteraction) -> InteractionOutcome:
+    async def handle(
+        self,
+        interaction: CanonicalInteraction,
+        *,
+        repository_scope: tuple[RepositoryId, ...] = (),
+    ) -> InteractionOutcome:
         """Process an interaction at most once per idempotency key."""
         conversation_id = ConversationId.derive(
             interaction.conversation.source,
@@ -167,7 +173,12 @@ class InteractionApplicationService:
             )
 
         try:
-            return await self._run_agent(interaction, conversation_id, claim.status)
+            return await self._run_agent(
+                interaction,
+                conversation_id,
+                claim.status,
+                repository_scope=repository_scope,
+            )
         finally:
             try:
                 await self._store.release_conversation_lock(
@@ -182,6 +193,8 @@ class InteractionApplicationService:
         interaction: CanonicalInteraction,
         conversation_id: ConversationId,
         claim_status: InteractionClaimStatus,
+        *,
+        repository_scope: tuple[RepositoryId, ...] = (),
     ) -> InteractionOutcome:
         try:
             history = await self._store.load_history(conversation_id, self._history_limit)
@@ -201,6 +214,7 @@ class InteractionApplicationService:
                 conversation_id=conversation_id,
                 capabilities=interaction.capabilities,
                 locale=interaction.locale,
+                repository_scope=repository_scope,
                 history=history,
                 received_at=interaction.received_at,
             )

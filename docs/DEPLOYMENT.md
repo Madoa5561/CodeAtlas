@@ -103,6 +103,32 @@ ollama serve
 - thinking model では `CODEATLAS_OLLAMA__THINK=true` を検討する。reasoning text は回答本文として扱わない。
 - 回答生成は `CODEATLAS_AGENT__DEADLINE_SECONDS` と `CODEATLAS_OLLAMA__TIMEOUT_SECONDS` で制限される。
 
+## Web API and GitHub Webhook
+
+`CODEATLAS_API__ENABLED=true`でFastAPI serverをcodeatlas container内に起動する。Composeはhostの`127.0.0.1:8080`へだけ公開する。
+
+```text
+CODEATLAS_API__ENABLED=true
+CODEATLAS_API__HOST=0.0.0.0
+CODEATLAS_API__PORT=8080
+CODEATLAS_API__ALLOW_ASK=true
+CODEATLAS_GITHUB__WEBHOOK_SECRET=...
+```
+
+```powershell
+curl.exe http://127.0.0.1:8080/healthz
+curl.exe http://127.0.0.1:8080/repositories
+curl.exe -X POST http://127.0.0.1:8080/ask -H "Content-Type: application/json" -d "{\"question\":\"Client はどこ?\",\"locale\":\"ja\"}"
+```
+
+GitHub Webhook URLは`http://<host>:8080/webhooks/github`。Secretを設定し、`push`/`pull_request`/`issues` eventを送る。現在は署名検証・delivery ID冪等記録までで、**Webhookからの自動index更新は未実装**である。local cloneを更新した後に次を実行する。
+
+```powershell
+codeatlas-admin --json index incremental /repositories/linejs HEAD
+```
+
+APIを公開ネットワークへbindする場合はreverse proxyで認証・TLSを終端し、`/ask`の公開には注意する。
+
 ## DeepSeek
 
 Ollama の代わりに DeepSeek API を利用できる。container から `https://api.deepseek.com` への outbound HTTPS が必要で、Ollama は不要である。

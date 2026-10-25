@@ -164,7 +164,7 @@ class DiscordSettings(BaseModel):
 
 
 class GitHubSettings(BaseModel):
-    """GitHub settings; network integration is deferred beyond M1."""
+    """Read-only GitHub API and webhook settings."""
 
     enabled: bool = False
     token: SecretStr | None = None
@@ -179,6 +179,16 @@ class GitHubSettings(BaseModel):
         if self.enabled and token_missing:
             raise ValueError("github.token is required when GitHub is enabled")
         return self
+
+
+class ApiSettings(BaseModel):
+    """Local FastAPI interaction and webhook server settings."""
+
+    enabled: bool = False
+    host: str = Field(default="127.0.0.1", min_length=1, max_length=255)
+    port: int = Field(default=8080, ge=1, le=65535)
+    max_body_bytes: int = Field(default=1_000_000, ge=1_024, le=20_000_000)
+    allow_ask: bool = True
 
 
 class SecuritySettings(BaseModel):
@@ -247,6 +257,7 @@ class CodeAtlasSettings(BaseSettings):
     deepseek: DeepSeekSettings = Field(default_factory=DeepSeekSettings)
     discord: DiscordSettings = Field(default_factory=DiscordSettings)
     github: GitHubSettings = Field(default_factory=GitHubSettings)
+    api: ApiSettings = Field(default_factory=ApiSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     indexing: IndexingLimits = Field(default_factory=IndexingLimits)
     repository: RepositorySettings = Field(default_factory=RepositorySettings)

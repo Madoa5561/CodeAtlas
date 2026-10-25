@@ -141,6 +141,7 @@ async def _run(args: argparse.Namespace, settings: CodeAtlasSettings) -> int:
     runtime = CodeAtlasRuntime.create(
         settings,
         enable_discord=False,
+        enable_api=False,
         log_stream=sys.stderr if args.json_output else None,
     )
     try:

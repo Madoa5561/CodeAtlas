@@ -18,6 +18,8 @@ services:
       CODEATLAS_OLLAMA__BASE_URL: ${CODEATLAS_OLLAMA__BASE_URL:-http://host.docker.internal:11434}
     extra_hosts:
       - host.docker.internal:host-gateway
+    ports:
+      - "127.0.0.1:8080:8080"
     volumes:
       - codeatlas-data:/app/data
       # Mount only explicitly approved repositories read-only, for example:
