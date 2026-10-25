@@ -26,3 +26,4 @@
 | [0022](0022-release-and-deployment-0-1-0.md) | Accepted | 0.1.0の配布・デプロイ方式 |
 | [0023](0023-deepseek-openai-compatible-provider.md) | Accepted | DeepSeekをOpenAI互換Providerとして追加 |
 | [0024](0024-discord-rendering-and-export-verification.md) | Accepted | Discord回答の単一描画とexport確認 |
+| [0025](0025-fts5-bm25-and-graph-traversal.md) | Accepted | SQLite FTS5/BM25 Lexical ProjectionとGraph Traversal |

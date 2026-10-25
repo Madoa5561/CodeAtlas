@@ -34,8 +34,10 @@ from codeatlas.application.tools.schemas import (
     ReadFileInput,
     SearchCodeInput,
     SearchCommitsInput,
+    SearchLexicalInput,
     SearchTextInput,
     ToolResult,
+    TraverseGraphInput,
 )
 from codeatlas.domain.agent_models import ToolContext, ToolDefinition
 
@@ -138,6 +140,14 @@ TOOL_SPECS: tuple[ToolSpec[Any], ...] = (
         repository_tools.search_code,
     ),
     ToolSpec(
+        "search_lexical",
+        "BM25-ranked lexical search over safe file content stored in the active code index. "
+        "Use alongside literal search for broader identifier/documentation recall. "
+        + _REPOSITORY_ARG,
+        SearchLexicalInput,
+        index_tools.search_lexical,
+    ),
+    ToolSpec(
         "find_symbol",
         "Find declarations by exact name and/or qualified-name suffix with optional kind "
         "and path-prefix filters. " + _REPOSITORY_ARG,
@@ -164,6 +174,13 @@ TOOL_SPECS: tuple[ToolSpec[Any], ...] = (
         "raw target matches a symbol name. " + _REPOSITORY_ARG,
         FindReferencesInput,
         index_tools.find_references,
+    ),
+    ToolSpec(
+        "traverse_graph",
+        "Traverse call/dependency/reference relations from a symbol or file with bounded "
+        "depth, edge kinds, and result count. " + _REPOSITORY_ARG,
+        TraverseGraphInput,
+        index_tools.traverse_graph,
     ),
     ToolSpec(
         "find_callers",

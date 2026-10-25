@@ -25,6 +25,8 @@ Tool は repository の working tree を読まない。revision 未指定時は 
 | `read_file` | `repository`, `path`, `revision` | 安全な text と行範囲 |
 | `search_text` | `repository`, `query`, `regex`, `path_prefix` | ripgrep/Python fallback の hit と evidence |
 | `search_code` | `repository`, `query` | symbol 検索と text 検索の統合 |
+| `search_lexical` | `repository`, `query`, `path_prefix` | FTS5/BM25 の行単位lexical検索 |
+| `traverse_graph` | `repository`, `start`, `edge_kinds`, `direction`, `max_depth` | call/dependency/reference のbounded BFS |
 | `find_symbol` | `repository`, `name`, `kind` | 宣言と source span |
 | `find_definition` | `repository`, `name` | 定義候補（宣言優先） |
 | `find_exports` | `repository`, `name` or `path` | export宣言、export relation、package/deno manifests経由の公開entrypoint再export |

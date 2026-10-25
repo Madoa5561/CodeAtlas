@@ -51,7 +51,7 @@ FTS、Thrift、確定Call/Dependency Graph、Qdrant projectionはM3完了範囲�
 
 - Model Port、canonical Tool Call、Ollama Adapter
 - Planner/Retriever/Ranker/Reasoner/Composer、conversation memory
-- 22のread-only Repository/Search Tool、SQLite index query
+- 24のread-only Repository/Search Tool、SQLite index query
 - prompt injection境界、citation検証、degraded mode
 
 完了条件: fixture質問に正しいSHA/path/lineを含む回答を返す。→ linejs `Client`定義を`packages/linejs/client/client.ts:91`として回答することを実Ollamaで確認済み。
@@ -65,8 +65,11 @@ FTS、Thrift、確定Call/Dependency Graph、Qdrant projectionはM3完了範囲�
 
 ## M6: GitHub と Hybrid Retrieval
 
-- GitHub App/Webhook、manual sync、PR/Issue Tool
-- Qdrant、graph traversal、fusion/reranking、freshness benchmark
+- [x] SQLite FTS5/BM25 lexical retrieval（v0.2.0）
+- [x] graph traversal Tool（v0.2.0）
+- [ ] Qdrant、embedding、fusion/reranking、freshness benchmark
+- [ ] GitHub App/Webhook、manual sync、PR/Issue Tool
+- [ ] Web API
 
 ## M7: 拡張
 

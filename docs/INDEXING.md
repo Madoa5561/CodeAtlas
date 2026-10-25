@@ -31,3 +31,16 @@ The previous active generation is compared by normalized path and Git object ID.
 ## Read-only Query
 
 `SqliteIndexQuery` exposes the active generation to M4 tools without mutating state. Each connection sets `query_only=ON`. It supports active snapshot lookup, file/content reads, symbol search by exact name, qualified-name suffix, kind, and path prefix, bounded text search with 1-based line and 0-based column excerpts, and relation queries by kind, target, or source symbol. All queries return full commit SHAs and are bounded by `RetrievalLimits`. Missing active generations produce a safe `not_found` tool outcome rather than falling back to working-tree content.
+
+## Lexical Projection (M6)
+
+`code_search_fts` is a line-level SQLite FTS5 projection of safe file content. It is generation-scoped and rebuildable from `file_versions.content_utf8`; it is not the source of truth.
+
+- indexing inserts non-empty lines during `add_file_bundle`
+- incremental reuse copies FTS rows from the previous generation
+- failed generations delete their FTS rows
+- migration `0003_m6_fts` creates the table and backfills existing databases
+- `search_lexical` converts an untrusted query to a bounded quoted MATCH expression and ranks with BM25
+- Japanese text is constrained by the `unicode61` tokenizer, so literal search and symbol search remain part of hybrid retrieval
+
+Graph traversal is implemented over the same relation candidates. `traverse_graph` starts from a symbol or file and performs bounded BFS with edge-kind, direction, depth, and result caps. Relation candidates retain provenance and confidence; they are not final resolved call edges.

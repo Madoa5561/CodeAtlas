@@ -8,6 +8,7 @@ from codeatlas.domain.indexing_models import IndexedFile, IndexedSymbol, SymbolI
 from codeatlas.domain.repository_models import RepositoryId, RepositoryPath
 from codeatlas.domain.retrieval_models import (
     IndexedRelation,
+    IndexLexicalHit,
     IndexSnapshotSummary,
     IndexTextHit,
     RelationKind,
@@ -55,6 +56,17 @@ class IndexQueryPort(Protocol):
         limit: int,
     ) -> tuple[IndexTextHit, ...]:
         """Search stored safe file content with a literal substring match."""
+        ...
+
+    async def search_lexical(
+        self,
+        generation_id: str,
+        *,
+        query: str,
+        limit: int,
+        path_prefix: str | None = None,
+    ) -> tuple[IndexLexicalHit, ...]:
+        """Return BM25-ranked FTS5 matches for a bounded lexical query."""
         ...
 
     async def find_relations(

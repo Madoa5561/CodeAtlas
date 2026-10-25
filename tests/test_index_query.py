@@ -367,6 +367,44 @@ async def test_find_relations_by_kind_target_source_and_path(
     assert len(limited) == 1
 
 
+async def test_fts_lexical_search_is_ranked_and_path_filtered(
+    indexed_repository: IndexedRepository,
+) -> None:
+    """FTS5 returns BM25-ranked line hits and honors a path prefix."""
+    hits = await indexed_repository.query.search_lexical(
+        indexed_repository.generation_id,
+        query="needle",
+        limit=5,
+    )
+    assert hits
+    assert all(hit.score >= 0.0 for hit in hits)
+    assert all(hit.commit_sha == indexed_repository.head_sha for hit in hits)
+    needle_hits = [hit for hit in hits if hit.path.as_posix() == "notes.txt"]
+    assert needle_hits
+    assert needle_hits[0].line == 2
+    assert "needle" in needle_hits[0].excerpt
+
+    filtered = await indexed_repository.query.search_lexical(
+        indexed_repository.generation_id,
+        query="needle",
+        limit=5,
+        path_prefix="src/",
+    )
+    assert all(hit.path.as_posix().startswith("src/") for hit in filtered)
+
+
+async def test_fts_lexical_search_rejects_empty_query(
+    indexed_repository: IndexedRepository,
+) -> None:
+    """An empty lexical query is a safe error, not an empty match-all scan."""
+    with pytest.raises(IndexQueryError):
+        await indexed_repository.query.search_lexical(
+            indexed_repository.generation_id,
+            query="   ",
+            limit=5,
+        )
+
+
 async def test_file_path_map_matches_file_records(
     indexed_repository: IndexedRepository,
 ) -> None:

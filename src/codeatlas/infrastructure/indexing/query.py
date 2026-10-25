@@ -36,12 +36,14 @@ from codeatlas.domain.indexing_models import (
 from codeatlas.domain.repository_models import RepositoryId, RepositoryPath
 from codeatlas.domain.retrieval_models import (
     IndexedRelation,
+    IndexLexicalHit,
     IndexSnapshotSummary,
     IndexTextHit,
     RelationKind,
     RetrievalLimits,
     SymbolQuery,
 )
+from codeatlas.infrastructure.indexing.fts import search_fts
 from codeatlas.infrastructure.indexing.models import (
     ExportRelationRow,
     FileVersionRow,
@@ -412,6 +414,56 @@ class SqliteIndexQuery:
                         )
                         if len(hits) >= effective:
                             return tuple(hits)
+            return tuple(hits)
+
+        return await self._run(operation)
+
+    async def search_lexical(
+        self,
+        generation_id: str,
+        *,
+        query: str,
+        limit: int,
+        path_prefix: str | None = None,
+    ) -> tuple[IndexLexicalHit, ...]:
+        """Return BM25-ranked FTS5 line matches for one generation."""
+        generation = self._generation_id(generation_id)
+        effective = min(self._limit(limit, maximum=1_000), self._limits.max_results)
+        if not query.strip() or "\x00" in query or len(query) > _MAX_MATCH_PATTERN_CHARS:
+            raise IndexQueryError("The lexical query is invalid.")
+        prefix = _normalized_prefix(path_prefix)
+
+        def operation(session: Session) -> tuple[IndexLexicalHit, ...]:
+            rows = search_fts(
+                session.connection(),
+                generation_id=generation.value,
+                query=query,
+                limit=effective,
+                path_prefix=prefix,
+            )
+            hits: list[IndexLexicalHit] = []
+            for row in rows:
+                try:
+                    path = (
+                        RepositoryPath(PurePosixPath(row.path))
+                        if row.path
+                        else RepositoryPath.root()
+                    )
+                    hits.append(
+                        IndexLexicalHit(
+                            repository_id=RepositoryId(row.repository_id),
+                            commit_sha=row.commit_sha,
+                            path=path,
+                            line=row.line,
+                            excerpt=row.excerpt,
+                            score=row.score,
+                        )
+                    )
+                except ValueError as error:
+                    raise IndexQueryError(
+                        "The lexical index returned an unusable row.",
+                        internal_cause=error,
+                    ) from error
             return tuple(hits)
 
         return await self._run(operation)

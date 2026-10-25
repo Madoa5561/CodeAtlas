@@ -3,7 +3,7 @@
 CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き回答をDiscord Forumなどへ返すOSSのCode Intelligence Platformです。
 
 > [!IMPORTANT]
-> 現在は **0.1.5** として、M4「Agent + Model Provider」とM5「Discord Forum MVP」まで実装済みです。Qdrant、Hybrid Retrieval、Thrift parser、GitHub App/Webhook、Web API、MCPは未実装です。未実装機能を実装済みとしては扱いません。
+> 現在は **0.2.0** として、M4「Agent + Model Provider」、M5「Discord Forum MVP」、M6のFTS5/BM25 lexical retrievalとgraph traversalまで実装済みです。Qdrant/Vector Search、GitHub App/Webhook、Web API、Thrift parser、MCPは未実装です。未実装機能を実装済みとしては扱いません。
 
 ## Status
 
@@ -18,11 +18,11 @@ CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き�
 | Agent Pipeline（Planner/Retriever/Ranker/Reasoner/Composer） | M4実装済み |
 | Ollama Model Provider、canonical Tool Call、evidence citation | M4実装済み |
 | DeepSeek（OpenAI互換）Model Provider | M4実装済み（Ollamaと排他） |
-| 22のread-only Repository/Search Tool | M4実装済み |
+| 24のread-only Repository/Search Tool | M4/M6実装済み |
 | Discord Forum新規投稿・thread会話・冪等性・thread lock | M5実装済み |
 | 会話履歴、retention purge、diagnostic CLI | M5実装済み |
-| Qdrant、BM25/FTS、Vector Search、Hybrid Retrieval | 未実装（M6） |
-| GitHub App/Webhook、PR/Issue Tool、Web API、MCP | 未実装（M6/M7） |
+| SQLite FTS5/BM25 lexical search、graph traversal | M6実装済み |
+| Qdrant、Vector Search、GitHub API/Webhook、PR/Issue、Web API | 未実装（M6） |
 | Thrift parser、確定Call/Dependency Graph、図生成 | 未実装（M6/M7） |
 
 詳細は[ロードマップ](docs/ROADMAP.md)を参照してください。

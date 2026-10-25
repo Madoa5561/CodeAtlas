@@ -266,8 +266,11 @@ class HeuristicPlanner:
 
         if signals.wants_repository_list:
             add(("list_repositories",))
-        if (signals.identifiers or signals.quoted) and signals.wants_definition:
-            add(("find_definition", "find_symbol"))
+        if signals.identifiers or signals.quoted:
+            if signals.wants_definition:
+                add(("find_definition", "find_symbol"))
+        if "search_lexical" in by_name:
+            add(("search_lexical",))
         search_tools = (
             ("search_code", "search_text")
             if signals.identifiers
@@ -281,6 +284,8 @@ class HeuristicPlanner:
                 add(("find_symbol", "find_definition"))
         if signals.wants_exports:
             add(("find_exports", "find_symbol"))
+        if signals.wants_graph:
+            add(("traverse_graph",))
         if signals.wants_callers:
             add(("find_callers", "find_references"))
         if signals.wants_references:
@@ -342,6 +347,22 @@ class HeuristicPlanner:
                 name=name,
                 path=file_path,
                 query=phrase,
+            )
+        if tool == "traverse_graph":
+            start = name or file_path or phrase
+            return _Draft(
+                tool=definition,
+                purpose_ja="呼び出し・依存グラフをたどります。",
+                purpose_en="Traverse the call and dependency graph.",
+                name=name,
+                path=file_path,
+                query=phrase,
+                extra={
+                    "start": start,
+                    "start_type": (
+                        "file" if not signals.identifiers and file_path is not None else "symbol"
+                    ),
+                },
             )
         if tool == "find_callees":
             return _Draft(

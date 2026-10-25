@@ -9,6 +9,19 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.2.0] - 2026-10-25
+
+### Added
+
+- M6 lexical retrieval: SQLite FTS5 line-level index（migration `0003_m6_fts`）、BM25 ranking、`search_lexical` Tool、incremental reuse時のFTSコピー、失敗generationのFTS削除、既存indexのbackfill
+- M6 graph traversal: `traverse_graph` Tool（symbol/file起点、edge種別、incoming/outgoing/both、深さ1-3、上限付き）
+- Plannerへlexical hybrid検索とgraph intentを追加
+
+### Changed
+
+- index schema headを`0003_m6_fts`へ更新。service起動前に`codeatlas-admin db upgrade`が必要
+- lexical検索はliteral検索と併用し、Rankerのmethod diversityで統合する
+
 ## [0.1.5] - 2026-10-25
 
 ### Added

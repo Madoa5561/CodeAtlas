@@ -28,6 +28,17 @@ SymbolKindName = Literal[
     "anonymous_function",
 ]
 
+RelationKindName = Literal["import", "export", "call", "extends", "implements", "reference"]
+
+_DEFAULT_EDGE_KINDS: tuple[RelationKindName, ...] = (
+    "import",
+    "export",
+    "call",
+    "extends",
+    "implements",
+    "reference",
+)
+
 _REPOSITORY_ID_PATTERN = r"^repo_[0-9a-f]{32}$"
 
 
@@ -129,6 +140,14 @@ class SearchCodeInput(RepositoryScopedInput):
     limit: int = Field(default=20, ge=1, le=100)
 
 
+class SearchLexicalInput(RepositoryScopedInput):
+    """BM25 lexical search over safe content stored in the active index."""
+
+    query: str = Field(min_length=1, max_length=1_024)
+    path_prefix: str | None = Field(default=None, min_length=1, max_length=4096)
+    limit: int = Field(default=20, ge=1, le=100)
+
+
 class FindSymbolInput(RepositoryScopedInput):
     """Find declarations by exact name or qualified-name suffix."""
 
@@ -213,6 +232,20 @@ class GetDependentsInput(RepositoryScopedInput):
 
     target: str = Field(min_length=1, max_length=1_024)
     limit: int = Field(default=20, ge=1, le=100)
+
+
+class TraverseGraphInput(RepositoryScopedInput):
+    """Bounded call/dependency graph traversal from a symbol or file."""
+
+    start: str = Field(min_length=1, max_length=1_024)
+    start_type: Literal["symbol", "file"] = "symbol"
+    direction: Literal["outgoing", "incoming", "both"] = "outgoing"
+    edge_kinds: list[RelationKindName] = Field(
+        default_factory=lambda: list(_DEFAULT_EDGE_KINDS),
+        max_length=6,
+    )
+    max_depth: int = Field(default=2, ge=1, le=3)
+    limit: int = Field(default=50, ge=1, le=100)
 
 
 class GetCommitInput(RevisionScopedInput):

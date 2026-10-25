@@ -41,6 +41,7 @@ async def test_clean_upgrade_downgrade_and_reupgrade(tmp_path: Path) -> None:
         "reference_relations",
         "index_jobs",
         "schema_metadata",
+        "code_search_fts",
     } <= tables
     await SqliteIndexStore(url).assert_schema_current()
     downgrade_database(url)

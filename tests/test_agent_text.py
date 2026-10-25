@@ -76,3 +76,18 @@ async def test_planner_export_intent_uses_find_exports() -> None:
     assert "find_exports" in [step.tool_name for step in plan.steps]
     export_step = next(step for step in plan.steps if step.tool_name == "find_exports")
     assert json.loads(export_step.arguments_json)["name"] == "Client"
+
+
+@pytest.mark.asyncio
+async def test_planner_graph_intent_uses_traverse_graph() -> None:
+    """Call-graph questions schedule the bounded graph traversal tool."""
+    catalog = build_tool_registry().definitions()
+    plan = await HeuristicPlanner().plan(
+        make_context("Service の呼び出しグラフを見たい"), catalog, AgentLimits()
+    )
+
+    assert "traverse_graph" in [step.tool_name for step in plan.steps]
+    graph_step = next(step for step in plan.steps if step.tool_name == "traverse_graph")
+    arguments = json.loads(graph_step.arguments_json)
+    assert arguments["start"] == "Service"
+    assert arguments["start_type"] == "symbol"

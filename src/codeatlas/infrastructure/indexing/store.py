@@ -42,6 +42,11 @@ from codeatlas.domain.indexing_models import (
     validate_generation_transition,
 )
 from codeatlas.domain.repository_models import RepositoryId, RepositoryPath
+from codeatlas.infrastructure.indexing.fts import (
+    copy_file_fts,
+    delete_generation_fts,
+    insert_file_fts,
+)
 from codeatlas.infrastructure.indexing.models import (
     ExportRelationRow,
     FileVersionRow,
@@ -57,7 +62,7 @@ from codeatlas.infrastructure.indexing.models import (
     ValidationResultRow,
 )
 
-SCHEMA_REVISION = "0002_m4_conversation"
+SCHEMA_REVISION = "0003_m6_fts"
 
 
 def _now() -> str:
@@ -281,6 +286,13 @@ class SqliteIndexStore:
                         for relation in references
                     ]
                 )
+                if file.content is not None:
+                    insert_file_fts(
+                        session,
+                        generation_id=file.generation_id.value,
+                        path=file.path.as_posix(),
+                        content=file.content,
+                    )
         except SQLAlchemyError as error:
             raise IndexingError(
                 "Index data could not be persisted.", internal_cause=error
@@ -456,6 +468,12 @@ class SqliteIndexStore:
                 )
             session.flush()
             self._copy_relations(session, source, target, target_generation_id, symbol_map)
+            copy_file_fts(
+                session,
+                source_generation_id=source_generation_id.value,
+                target_generation_id=target_generation_id.value,
+                path=path.as_posix(),
+            )
             return True
 
     @staticmethod
@@ -724,6 +742,7 @@ class SqliteIndexStore:
             row.failure_message = failure.safe_message[:256]
             row.statistics_json = json.dumps(asdict(statistics))
             row.updated_at = _now()
+            delete_generation_fts(session, generation_id.value)
 
     async def save_statistics(
         self, generation_id: IndexGenerationId, statistics: IndexingStatistics

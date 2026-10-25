@@ -81,8 +81,10 @@ EXPECTED_TOOL_NAMES = {
     "list_tags",
     "read_file",
     "search_code",
+    "search_lexical",
     "search_commits",
     "search_text",
+    "traverse_graph",
 }
 
 
@@ -243,6 +245,8 @@ async def test_catalog_definitions_match_strict_schemas(tool_stack: ToolStack) -
     assert set(schemas["compare_refs"]["required"]) == {"base", "head"}
     assert schemas["search_text"]["required"] == ["query"]
     assert schemas["search_code"]["required"] == ["query"]
+    assert schemas["search_lexical"]["required"] == ["query"]
+    assert schemas["traverse_graph"]["required"] == ["start"]
     assert schemas["find_definition"]["required"] == ["name"]
     assert schemas["find_exports"].get("required", []) == []
     assert schemas["get_dependents"]["required"] == ["target"]
@@ -262,6 +266,12 @@ async def test_evidence_bearing_tools_return_verified_provenance(tool_stack: Too
         ("list_directory", {"path": "."}, "git_tree"),
         ("search_text", {"query": "helper"}, "git_text_search"),
         ("search_code", {"query": "helper"}, "index_text_search"),
+        ("search_lexical", {"query": "helper"}, "index_fts"),
+        (
+            "traverse_graph",
+            {"start": "helper", "edge_kinds": ["call"], "direction": "incoming"},
+            "index_graph",
+        ),
         ("find_symbol", {"name": "helper"}, "index_symbol_exact"),
         ("find_definition", {"name": "Service"}, "index_definition"),
         ("find_exports", {"name": "Service"}, "index_export_symbol"),

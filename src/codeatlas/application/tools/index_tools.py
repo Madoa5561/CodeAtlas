@@ -31,11 +31,13 @@ from codeatlas.application.tools.schemas import (
     FindSymbolInput,
     GetDependenciesInput,
     GetDependentsInput,
+    SearchLexicalInput,
     ToolResult,
+    TraverseGraphInput,
 )
 from codeatlas.domain.agent_models import EvidenceCandidate, EvidenceKind, ToolContext
 from codeatlas.domain.errors import NotFoundError
-from codeatlas.domain.indexing_models import IndexedFileId, IndexedSymbol
+from codeatlas.domain.indexing_models import IndexedFileId, IndexedSymbol, SymbolId
 from codeatlas.domain.repository_models import RepositoryDescriptor, RepositoryPath
 from codeatlas.domain.retrieval_models import IndexedRelation, IndexTextHit, RelationKind
 
@@ -273,6 +275,61 @@ async def _lookup_symbols(
     )
 
 
+async def search_lexical(
+    services: ToolServices, context: ToolContext, arguments: SearchLexicalInput
+) -> ToolResult:
+    """Return BM25-ranked lexical matches from the FTS5 projection."""
+    descriptor = resolve_repository(services, context, arguments.repository_id)
+    snapshot, generation_id = await require_snapshot(services, descriptor)
+    limit = clamp_limit(arguments.limit, 100)
+    path = (
+        parse_path(arguments.path_prefix, allow_root=True)
+        if arguments.path_prefix is not None
+        else None
+    )
+    prefix = path.as_posix() if path is not None and not path.is_root else None
+    hits = await services.index.search_lexical(
+        generation_id,
+        query=arguments.query,
+        limit=limit,
+        path_prefix=prefix,
+    )
+    best = max((hit.score for hit in hits), default=0.0)
+    evidence = tuple(
+        make_evidence(
+            kind=EvidenceKind.FILE_EXCERPT,
+            descriptor=descriptor,
+            commit_sha=snapshot.commit_sha,
+            path=hit.path,
+            start_line=hit.line,
+            end_line=hit.line,
+            excerpt=hit.excerpt,
+            retrieval_method="index_fts",
+            confidence=0.8 if best <= 0.0 else min(1.0, 0.5 + (0.5 * hit.score / best)),
+        )
+        for hit in hits
+    )
+    return ToolResult(
+        {
+            "repository_id": descriptor.repository_id.value,
+            "commit_sha": snapshot.commit_sha,
+            "query": arguments.query,
+            "hits": [
+                {
+                    "path": hit.path.as_posix(),
+                    "line": hit.line,
+                    "excerpt": hit.excerpt,
+                    "score": round(hit.score, 6),
+                }
+                for hit in hits
+            ],
+            "count": len(hits),
+        },
+        evidence=evidence,
+        truncated=len(hits) >= limit,
+    )
+
+
 async def find_symbol(
     services: ToolServices, context: ToolContext, arguments: FindSymbolInput
 ) -> ToolResult:
@@ -305,6 +362,194 @@ async def find_symbol(
             services, descriptor, snapshot.commit_sha, symbols, paths, retrieval_method=method
         ),
         truncated=len(symbols) >= limit,
+    )
+
+
+async def traverse_graph(
+    services: ToolServices, context: ToolContext, arguments: TraverseGraphInput
+) -> ToolResult:
+    """Traverse call/dependency relations with bounded depth and breadth."""
+    descriptor = resolve_repository(services, context, arguments.repository_id)
+    snapshot, generation_id = await require_snapshot(services, descriptor)
+    limit = clamp_limit(arguments.limit, 100)
+    kinds = tuple(RelationKind(name) for name in arguments.edge_kinds)
+    direction = arguments.direction
+    queue: list[tuple[str, str, int]] = []
+    nodes: dict[str, dict[str, object]] = {}
+    edges: list[dict[str, object]] = []
+    evidence: list[EvidenceCandidate] = []
+
+    def add_node(ref: str, kind: str, label: str, path: str | None = None) -> None:
+        if ref in nodes:
+            return
+        nodes[ref] = {"ref": ref, "kind": kind, "label": label, "path": path}
+
+    if arguments.start_type == "symbol":
+        symbols = await _lookup_symbols(services, generation_id, arguments.start, limit=5)
+        if not symbols:
+            raise NotFoundError("The graph start symbol was not found.")
+        for symbol in symbols:
+            ref = f"symbol:{symbol.symbol_id.value}"
+            add_node(ref, "symbol", symbol.qualified_name)
+            queue.append(("symbol", symbol.symbol_id.value, 0))
+    else:
+        start_path = parse_path(arguments.start, allow_root=False)
+        ref = f"file:{start_path.as_posix()}"
+        add_node(ref, "file", start_path.as_posix(), start_path.as_posix())
+        queue.append(("file", start_path.as_posix(), 0))
+
+    visited: set[tuple[str, str]] = set()
+    while queue and len(edges) < limit:
+        kind, value, depth = queue.pop(0)
+        key = (kind, value)
+        if key in visited:
+            continue
+        visited.add(key)
+        current_ref = f"symbol:{value}" if kind == "symbol" else f"file:{value}"
+        relations: list[IndexedRelation] = []
+        remaining = max(1, limit - len(edges))
+        if kind == "symbol":
+            symbol_id = SymbolId(value)
+            if direction in {"outgoing", "both"}:
+                relations.extend(
+                    await services.index.find_relations_filtered(
+                        generation_id,
+                        relation_kinds=kinds,
+                        source_symbol_id=symbol_id,
+                        limit=remaining,
+                    )
+                )
+            if direction in {"incoming", "both"}:
+                current_symbol = await services.index.get_symbol(generation_id, symbol_id)
+                if current_symbol is not None:
+                    for target in dict.fromkeys(
+                        (current_symbol.name, current_symbol.qualified_name)
+                    ):
+                        relations.extend(
+                            await services.index.find_relations_filtered(
+                                generation_id,
+                                relation_kinds=kinds,
+                                raw_target=target,
+                                limit=remaining,
+                            )
+                        )
+        elif direction in {"outgoing", "both"} and value != ".":
+            relations.extend(
+                await services.index.find_relations_filtered(
+                    generation_id,
+                    relation_kinds=kinds,
+                    path=RepositoryPath(PurePosixPath(value)),
+                    limit=remaining,
+                )
+            )
+
+        seen_relations: set[tuple[str, int, str, str]] = set()
+        for relation in relations:
+            if len(edges) >= limit:
+                break
+            relation_key = (
+                relation.path.as_posix(),
+                relation.span.start_byte,
+                relation.raw_target,
+                relation.relation_kind.value,
+            )
+            if relation_key in seen_relations:
+                continue
+            seen_relations.add(relation_key)
+            source_is_current = (
+                kind == "symbol"
+                and relation.source_symbol_id is not None
+                and relation.source_symbol_id.value == value
+            )
+            if source_is_current:
+                target_name = relation.raw_target
+                neighbor_ref = f"symbol:{target_name}"
+                matches = await _lookup_symbols(
+                    services, generation_id, target_name.split(".")[-1], limit=3
+                )
+                if matches:
+                    neighbor_ref = f"symbol:{matches[0].symbol_id.value}"
+                    add_node(neighbor_ref, "symbol", matches[0].qualified_name)
+                    if depth + 1 < arguments.max_depth:
+                        queue.append(("symbol", matches[0].symbol_id.value, depth + 1))
+                else:
+                    add_node(neighbor_ref, "symbol", target_name)
+                source_ref = current_ref
+            else:
+                if relation.source_symbol_id is not None:
+                    neighbor_ref = f"symbol:{relation.source_symbol_id.value}"
+                    source_symbol = await services.index.get_symbol(
+                        generation_id, relation.source_symbol_id
+                    )
+                    label = (
+                        source_symbol.qualified_name
+                        if source_symbol is not None
+                        else relation.raw_target
+                    )
+                    add_node(neighbor_ref, "symbol", label)
+                    if depth + 1 < arguments.max_depth:
+                        queue.append(("symbol", relation.source_symbol_id.value, depth + 1))
+                else:
+                    neighbor_ref = f"file:{relation.path.as_posix()}"
+                    add_node(
+                        neighbor_ref, "file", relation.path.as_posix(), relation.path.as_posix()
+                    )
+                source_ref = neighbor_ref
+                target_ref = current_ref
+                edges.append(
+                    {
+                        "from": source_ref,
+                        "to": target_ref,
+                        "kind": relation.relation_kind.value,
+                        "path": relation.path.as_posix(),
+                        "line": relation.span.start_line,
+                        "raw_target": relation.raw_target,
+                        "depth": depth + 1,
+                    }
+                )
+                evidence.append(
+                    relation_evidence(
+                        descriptor,
+                        snapshot.commit_sha,
+                        relation,
+                        retrieval_method="index_graph",
+                    )
+                )
+                continue
+            edges.append(
+                {
+                    "from": source_ref,
+                    "to": neighbor_ref,
+                    "kind": relation.relation_kind.value,
+                    "path": relation.path.as_posix(),
+                    "line": relation.span.start_line,
+                    "raw_target": relation.raw_target,
+                    "depth": depth + 1,
+                }
+            )
+            evidence.append(
+                relation_evidence(
+                    descriptor,
+                    snapshot.commit_sha,
+                    relation,
+                    retrieval_method="index_graph",
+                )
+            )
+
+    return ToolResult(
+        {
+            "repository_id": descriptor.repository_id.value,
+            "commit_sha": snapshot.commit_sha,
+            "start": arguments.start,
+            "start_type": arguments.start_type,
+            "direction": direction,
+            "edge_kinds": list(arguments.edge_kinds),
+            "nodes": list(nodes.values()),
+            "edges": edges,
+            "count": len(edges),
+        },
+        evidence=tuple(evidence),
+        truncated=len(edges) >= limit,
     )
 
 

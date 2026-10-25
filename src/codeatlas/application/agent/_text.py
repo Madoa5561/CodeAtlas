@@ -239,6 +239,20 @@ _EXPORT_KEYWORDS = (
     "エントリポイント",
     "エントリーポイント",
 )
+_GRAPH_KEYWORDS = (
+    "call graph",
+    "calls graph",
+    "dependency graph",
+    "dependencies graph",
+    "import graph",
+    "graph traversal",
+    "traverse",
+    "呼び出しグラフ",
+    "依存グラフ",
+    "参照グラフ",
+    "グラフ",
+    "影響範囲",
+)
 
 _ASCII_KEYWORD = re.compile(r"^[a-z0-9 ]+$")
 
@@ -423,6 +437,7 @@ class QuerySignals:
     wants_blame: bool
     wants_repository_list: bool
     wants_exports: bool
+    wants_graph: bool
 
     @property
     def search_phrase(self) -> str:
@@ -463,6 +478,7 @@ class QuerySignals:
                 self.wants_blame,
                 self.wants_repository_list,
                 self.wants_exports,
+                self.wants_graph,
             )
         )
 
@@ -500,6 +516,7 @@ def analyze(query: str) -> QuerySignals:
         wants_blame=_matches_any(folded, _BLAME_KEYWORDS),
         wants_repository_list=_matches_any(folded, _REPOSITORY_KEYWORDS),
         wants_exports=_matches_any(folded, _EXPORT_KEYWORDS),
+        wants_graph=_matches_any(folded, _GRAPH_KEYWORDS),
     )
 
 

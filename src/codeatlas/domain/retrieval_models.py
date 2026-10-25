@@ -51,6 +51,28 @@ class IndexTextHit:
 
 
 @dataclass(frozen=True, slots=True)
+class IndexLexicalHit:
+    """One BM25-ranked lexical match from the FTS5 projection."""
+
+    repository_id: RepositoryId
+    commit_sha: str
+    path: RepositoryPath
+    line: int
+    excerpt: str
+    score: float
+
+    def __post_init__(self) -> None:
+        if _SHA.fullmatch(self.commit_sha) is None:
+            raise ValueError("lexical hit requires a full commit SHA")
+        if self.line < 1:
+            raise ValueError("invalid lexical hit line")
+        if not self.excerpt.strip():
+            raise ValueError("lexical hit requires an excerpt")
+        if self.score < 0.0:
+            raise ValueError("lexical hit score cannot be negative")
+
+
+@dataclass(frozen=True, slots=True)
 class IndexedRelation:
     """One parser-derived relation candidate with immutable provenance."""
 
