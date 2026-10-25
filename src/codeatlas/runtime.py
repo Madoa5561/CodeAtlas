@@ -14,7 +14,7 @@ from typing import TextIO
 
 import httpx
 
-from codeatlas import API_VERSION, __version__
+from codeatlas import __version__
 from codeatlas.adapters.discord import DiscordInteractionPlugin
 from codeatlas.adapters.http.api import ApiServices, create_api_app
 from codeatlas.adapters.http.plugin import ApiServerPlugin
