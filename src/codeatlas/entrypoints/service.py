@@ -79,15 +79,41 @@ async def serve() -> None:
     await run_service(runtime, stop_requested)
 
 
+def _safe_error_details(error: BaseException) -> str:
+    """Return a value-free startup failure description safe to log.
+
+    Pydantic validation errors are reduced to field locations only. Input values
+    are never logged, so a configuration typo cannot leak a secret.
+    """
+    candidate: object = getattr(error, "internal_cause", None) or error
+    errors_attr: object = getattr(candidate, "errors", None)
+    if callable(errors_attr):
+        try:
+            items: object = errors_attr()
+        except Exception:
+            items = []
+        fields: list[str] = []
+        if isinstance(items, list):
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                loc = item.get("loc")
+                if isinstance(loc, list | tuple) and loc:
+                    fields.append(".".join(str(part) for part in loc))
+        if fields:
+            return "fields=" + ",".join(sorted(set(fields))[:10])
+    code = getattr(error, "code", None)
+    if isinstance(code, str) and code:
+        return f"error_code={code}"
+    return f"error_type={type(error).__name__}"
+
+
 def main() -> None:
     """Run the asynchronous CodeAtlas service lifecycle."""
     try:
         asyncio.run(serve())
     except Exception as error:
-        logger.error(
-            "service_failed",
-            extra={"error_type": type(error).__name__},
-        )
+        logger.error("service_failed %s", _safe_error_details(error))
         raise SystemExit(1) from None
 
 

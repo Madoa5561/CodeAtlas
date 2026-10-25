@@ -9,6 +9,12 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.1.4] - 2026-10-25
+
+### Fixed
+
+- 起動失敗時のlogが`service_failed`だけで原因不明だった問題を修正し、validation errorはfield locationのみ、CodeAtlasErrorはsafe error code、その他は例外型名だけを出力するようにした（入力値・secretは決して出力しない）
+
 ## [0.1.3] - 2026-10-25
 
 ### Added
