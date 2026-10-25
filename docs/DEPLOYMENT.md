@@ -158,6 +158,20 @@ docker compose run --rm codeatlas codeatlas-admin --json vector status /reposito
 
 `fresh=true`はactive generationのpointsが存在することを示す。index更新後は再rebuildが必要。
 
+## Model Provider
+
+`CODEATLAS_*__ENABLED`は1つだけtrueにする。切り替え例:
+
+```text
+CODEATLAS_OLLAMA__ENABLED=false
+CODEATLAS_DEEPSEEK__ENABLED=false
+CODEATLAS_OPENAI__ENABLED=true
+CODEATLAS_OPENAI__API_KEY=...
+CODEATLAS_OPENAI__MODEL=gpt-4.1-mini
+```
+
+Anthropic/Geminiも同じパターン（`ANTHROPIC__*` / `GEMINI__*`）。API keyはログへ出力されない。
+
 ## DeepSeek
 
 Ollama の代わりに DeepSeek API を利用できる。container から `https://api.deepseek.com` への outbound HTTPS が必要で、Ollama は不要である。

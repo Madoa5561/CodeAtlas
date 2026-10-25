@@ -20,7 +20,15 @@ from codeatlas.adapters.embedding import build_embedding_provider
 from codeatlas.adapters.github import GitHubRestClient
 from codeatlas.adapters.http.api import ApiServices, create_api_app
 from codeatlas.adapters.http.plugin import ApiServerPlugin
-from codeatlas.adapters.model import DeepSeekModelPlugin, OllamaModelPlugin
+from codeatlas.adapters.model import (
+    AnthropicModelProvider,
+    DeepSeekModelPlugin,
+    ExternalModelPlugin,
+    GeminiModelProvider,
+    OllamaModelPlugin,
+    OpenAIModelProvider,
+    build_external_plugin,
+)
 from codeatlas.adapters.parsing.thrift_parser import ThriftParser
 from codeatlas.adapters.parsing.tree_sitter_parser import TreeSitterTypeScriptParser
 from codeatlas.adapters.repository.plugin import LocalGitRepositoryPlugin
@@ -82,7 +90,7 @@ class CodeAtlasRuntime:
 
     settings: CodeAtlasSettings
     repository_plugin: LocalGitRepositoryPlugin
-    model_plugin: OllamaModelPlugin | DeepSeekModelPlugin
+    model_plugin: OllamaModelPlugin | DeepSeekModelPlugin | ExternalModelPlugin
     index_query: SqliteIndexQuery
     conversation_store: SqliteConversationStore
     webhook_store: SqliteWebhookStore
@@ -186,11 +194,32 @@ class CodeAtlasRuntime:
                 RepositoryId(settings.github.webhook_repository_id),
                 settings.github.webhook_repository,
             )
-        model_plugin: OllamaModelPlugin | DeepSeekModelPlugin
+        model_plugin: OllamaModelPlugin | DeepSeekModelPlugin | ExternalModelPlugin
         if settings.deepseek.enabled:
             model_plugin = DeepSeekModelPlugin.from_settings(
                 settings.deepseek,
                 transport=model_transport,
+            )
+        elif settings.openai.enabled:
+            model_plugin = build_external_plugin(
+                OpenAIModelProvider.from_settings(
+                    settings.openai,
+                    transport=model_transport,
+                )
+            )
+        elif settings.anthropic.enabled:
+            model_plugin = build_external_plugin(
+                AnthropicModelProvider.from_settings(
+                    settings.anthropic,
+                    transport=model_transport,
+                )
+            )
+        elif settings.gemini.enabled:
+            model_plugin = build_external_plugin(
+                GeminiModelProvider.from_settings(
+                    settings.gemini,
+                    transport=model_transport,
+                )
             )
         else:
             model_plugin = OllamaModelPlugin.from_settings(

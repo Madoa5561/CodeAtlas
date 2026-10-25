@@ -145,6 +145,64 @@ class DeepSeekSettings(BaseModel):
         return self
 
 
+class OpenAISettings(BaseModel):
+    """OpenAI chat provider settings."""
+
+    enabled: bool = False
+    api_key: SecretStr | None = None
+    base_url: HttpUrl = HttpUrl("https://api.openai.com/v1")
+    model: str = Field(default="gpt-4.1-mini", min_length=1, max_length=200)
+    timeout_seconds: float = Field(default=60.0, ge=1.0, le=600.0)
+    max_retries: int = Field(default=2, ge=0, le=5)
+    retry_backoff_seconds: float = Field(default=0.5, ge=0.0, le=10.0)
+
+    @model_validator(mode="after")
+    def require_api_key_when_enabled(self) -> OpenAISettings:
+        """Require a non-blank API key only for an enabled provider."""
+        key_missing = self.api_key is None or not self.api_key.get_secret_value().strip()
+        if self.enabled and key_missing:
+            raise ValueError("openai.api_key is required when OpenAI is enabled")
+        return self
+
+
+class AnthropicSettings(BaseModel):
+    """Anthropic Messages API provider settings."""
+
+    enabled: bool = False
+    api_key: SecretStr | None = None
+    base_url: HttpUrl = HttpUrl("https://api.anthropic.com")
+    model: str = Field(default="claude-sonnet-4-5", min_length=1, max_length=200)
+    timeout_seconds: float = Field(default=60.0, ge=1.0, le=600.0)
+    max_retries: int = Field(default=2, ge=0, le=5)
+
+    @model_validator(mode="after")
+    def require_api_key_when_enabled(self) -> AnthropicSettings:
+        """Require a non-blank API key only for an enabled provider."""
+        key_missing = self.api_key is None or not self.api_key.get_secret_value().strip()
+        if self.enabled and key_missing:
+            raise ValueError("anthropic.api_key is required when Anthropic is enabled")
+        return self
+
+
+class GeminiSettings(BaseModel):
+    """Google Gemini generateContent provider settings."""
+
+    enabled: bool = False
+    api_key: SecretStr | None = None
+    base_url: HttpUrl = HttpUrl("https://generativelanguage.googleapis.com")
+    model: str = Field(default="gemini-2.5-flash", min_length=1, max_length=200)
+    timeout_seconds: float = Field(default=60.0, ge=1.0, le=600.0)
+    max_retries: int = Field(default=2, ge=0, le=5)
+
+    @model_validator(mode="after")
+    def require_api_key_when_enabled(self) -> GeminiSettings:
+        """Require a non-blank API key only for an enabled provider."""
+        key_missing = self.api_key is None or not self.api_key.get_secret_value().strip()
+        if self.enabled and key_missing:
+            raise ValueError("gemini.api_key is required when Gemini is enabled")
+        return self
+
+
 class DiscordSettings(BaseModel):
     """Discord Forum adapter and response presentation settings."""
 
@@ -300,6 +358,9 @@ class CodeAtlasSettings(BaseSettings):
     qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
     ollama: OllamaSettings = Field(default_factory=OllamaSettings)
     deepseek: DeepSeekSettings = Field(default_factory=DeepSeekSettings)
+    openai: OpenAISettings = Field(default_factory=OpenAISettings)
+    anthropic: AnthropicSettings = Field(default_factory=AnthropicSettings)
+    gemini: GeminiSettings = Field(default_factory=GeminiSettings)
     discord: DiscordSettings = Field(default_factory=DiscordSettings)
     github: GitHubSettings = Field(default_factory=GitHubSettings)
     api: ApiSettings = Field(default_factory=ApiSettings)
@@ -313,8 +374,15 @@ class CodeAtlasSettings(BaseSettings):
     @model_validator(mode="after")
     def require_single_model_provider(self) -> CodeAtlasSettings:
         """Keep model provider selection deterministic by enabling at most one."""
-        if self.ollama.enabled and self.deepseek.enabled:
-            raise ValueError("enable only one model provider: ollama or deepseek")
+        enabled = [
+            self.ollama.enabled,
+            self.deepseek.enabled,
+            self.openai.enabled,
+            self.anthropic.enabled,
+            self.gemini.enabled,
+        ]
+        if sum(enabled) > 1:
+            raise ValueError("enable only one model provider")
         if self.qdrant.enabled and not self.embedding.enabled:
             raise ValueError("embedding.enabled is required when qdrant is enabled")
         return self

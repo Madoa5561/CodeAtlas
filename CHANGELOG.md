@@ -9,6 +9,28 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.5.0] - 2026-10-25
+
+### Added
+
+- M7 external Model Providers
+  - OpenAI chat completions provider（既存OpenAI-compatible adapterを再利用）
+  - Anthropic Messages API provider
+  - Gemini generateContent provider
+- provider選択を`CODEATLAS_OPENAI__*` / `ANTHROPIC__*` / `GEMINI__*`で設定
+- 同時有効化を拒否するprovider排他validation
+- provider lifecycle plugin（probe・degraded状態・安全なstop）
+- ADR-0031
+
+### Changed
+
+- runtimeのmodel provider選択がOllama/DeepSeek/OpenAI/Anthropic/Geminiへ拡張
+- Reasonerはtext/JSON completionのみを使うため、外部providerはtool-calling非対応でも動作
+
+### Notes
+
+実APIキーが未設定のため、外部providerのlive呼び出しは未検証。MockTransport契約テストでrequest/response/認証エラーを検証。
+
 ## [0.4.0] - 2026-10-25
 
 ### Added

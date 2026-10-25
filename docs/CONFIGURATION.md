@@ -102,6 +102,29 @@ CODEATLAS_GITHUB__WEBHOOK_SECRET=...
 - PR/Issueはexternal evidenceとしてcitationにGitHub URLを付ける。PRはhead SHA、Issueはactive index snapshot SHAを文脈SHAとする。
 - GitHub toolsはlocal repositoryのactive indexを要求する。
 
+## Model Providers
+
+Ollama / DeepSeek / OpenAI / Anthropic / Gemini のうち**1つだけ**を有効化する。
+
+```text
+CODEATLAS_OPENAI__ENABLED=true
+CODEATLAS_OPENAI__API_KEY=...
+CODEATLAS_OPENAI__MODEL=gpt-4.1-mini
+
+CODEATLAS_ANTHROPIC__ENABLED=true
+CODEATLAS_ANTHROPIC__API_KEY=...
+CODEATLAS_ANTHROPIC__MODEL=claude-sonnet-4-5
+
+CODEATLAS_GEMINI__ENABLED=true
+CODEATLAS_GEMINI__API_KEY=...
+CODEATLAS_GEMINI__MODEL=gemini-2.5-flash
+```
+
+- 有効化時にAPI keyが必須。
+- AnthropicはMessages API、GeminiはgenerateContent APIを使う。
+- Runtimeは起動時に課金なしのmetadata probeを行い、失敗時はdegraded状態で継続する。
+- Reasonerはtext/JSON completionのみを使う（tool callingは不要）。
+
 ## Embedding and Qdrant
 
 ```text
