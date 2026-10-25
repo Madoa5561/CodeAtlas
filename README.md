@@ -3,7 +3,7 @@
 CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き回答をDiscord Forumなどへ返すOSSのCode Intelligence Platformです。
 
 > [!IMPORTANT]
-> 現在は **0.1.2** として、M4「Agent + Ollama」とM5「Discord Forum MVP」まで実装済みです。Qdrant、Hybrid Retrieval、Thrift parser、GitHub App/Webhook、Web API、MCPは未実装です。未実装機能を実装済みとしては扱いません。
+> 現在は **0.1.3** として、M4「Agent + Model Provider」とM5「Discord Forum MVP」まで実装済みです。Qdrant、Hybrid Retrieval、Thrift parser、GitHub App/Webhook、Web API、MCPは未実装です。未実装機能を実装済みとしては扱いません。
 
 ## Status
 
@@ -17,6 +17,7 @@ CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き�
 | SQLite transactional generation、TS/JS Tree-sitter索引 | M3実装済み |
 | Agent Pipeline（Planner/Retriever/Ranker/Reasoner/Composer） | M4実装済み |
 | Ollama Model Provider、canonical Tool Call、evidence citation | M4実装済み |
+| DeepSeek（OpenAI互換）Model Provider | M4実装済み（Ollamaと排他） |
 | 21のread-only Repository/Search Tool | M4実装済み |
 | Discord Forum新規投稿・thread会話・冪等性・thread lock | M5実装済み |
 | 会話履歴、retention purge、diagnostic CLI | M5実装済み |
@@ -86,6 +87,24 @@ codeatlas-ask --json ask "認証はどのファイルで処理されています
 ```
 
 回答には結論、確認済みの事実、推測、不明点、repository、commit SHA、path、行番号、参照symbol、検索方法、確信度が含まれます。Ollamaが無効・停止・timeoutのときはdeterministic extractive modeで回答し、statusを`partial`にします。全ファイルをLLMへ渡すことはありません。
+
+## Model Provider
+
+`ollama`と`deepseek`のどちらか一方を有効化する（同時有効化は起動時に拒否）。
+
+```powershell
+# ローカルOllama
+$env:CODEATLAS_OLLAMA__ENABLED="true"
+$env:CODEATLAS_OLLAMA__MODEL="ornith-1.5-9b:q4_k_m"
+
+# またはDeepSeek API
+$env:CODEATLAS_OLLAMA__ENABLED="false"
+$env:CODEATLAS_DEEPSEEK__ENABLED="true"
+$env:CODEATLAS_DEEPSEEK__API_KEY="sk-..."
+$env:CODEATLAS_DEEPSEEK__MODEL="deepseek-flash"
+```
+
+DeepSeekはOpenAI互換APIとして同じcanonical tool call・citation契約に正規化されます。API keyはlog・回答・imageへ出しません。設定の詳細は[CONFIGURATION.md](docs/CONFIGURATION.md)を参照してください。
 
 ## Discord
 

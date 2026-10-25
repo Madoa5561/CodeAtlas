@@ -20,6 +20,7 @@ process environmentが`.env`より優先される。不正な型、範囲外の�
 | `DATABASE` | SQLite URL、busy/lease/lock timeout | 利用 |
 | `QDRANT` | URL、API key、timeout | M6まで未接続 |
 | `OLLAMA` | base URL、model、retry、timeout、thinking | M4で利用 |
+| `DEEPSEEK` | API key、base URL、model、retry、thinking | 利用（Ollamaと排他） |
 | `DISCORD` | enabled、token、forum ID、reply policy、表示 | M5で利用 |
 | `GITHUB` | enabled、token、webhook secret、API URL | M6まで未接続 |
 | `SECURITY` | plugin allowlist、read-only、HTTP上限 | 利用 |
@@ -59,6 +60,28 @@ CODEATLAS_OLLAMA__NUM_CTX=8192
 - `THINK=false`が既定。thinking modelでは`true`にできるが、reasoning textは回答本文として扱わない。
 - base URLにuserinfo、query、fragmentは指定できない。
 - Ollamaが無効・停止・timeoutのとき、Agentはdeterministic extractive reasonerで回答し、statusを`partial`にする。
+
+## DeepSeek
+
+DeepSeek APIはOpenAI互換であり、`DeepSeekModelProvider`が同じcanonical contractへ正規化する。**OllamaとDeepSeekは同時に有効化できない**（起動時validation error）。
+
+```text
+CODEATLAS_OLLAMA__ENABLED=false
+CODEATLAS_DEEPSEEK__ENABLED=true
+CODEATLAS_DEEPSEEK__API_KEY=sk-...
+CODEATLAS_DEEPSEEK__BASE_URL=https://api.deepseek.com
+CODEATLAS_DEEPSEEK__MODEL=deepseek-flash
+CODEATLAS_DEEPSEEK__TIMEOUT_SECONDS=60
+CODEATLAS_DEEPSEEK__MAX_RETRIES=2
+CODEATLAS_DEEPSEEK__RETRY_BACKOFF_SECONDS=0.5
+CODEATLAS_DEEPSEEK__THINKING=false
+```
+
+- `MODEL`は`deepseek-flash`または`deepseek-v4-pro`。既定は`deepseek-flash`。
+- `THINKING=false`が既定で、DeepSeekのthinking modeを無効化する。有効化しても`reasoning_content`は回答本文として扱わない。
+- API keyは`SecretStr`で保持し、log・回答・imageへ出さない。401/403は安全なprovider errorへ変換する。
+- 到達不能・timeout・rate limit時はbounded retry後、あるいはextractive fallbackで`partial`回答になる。
+- `/models`へのbounded probeで起動時availabilityを記録する（到達不能でも起動は継続）。
 
 ## Discord
 

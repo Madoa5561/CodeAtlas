@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Protocol
 
+import httpx
 import pytest
 
 from codeatlas.config.settings import CodeAtlasSettings
@@ -64,6 +65,26 @@ async def test_runtime_starts_with_current_schema_and_registered_repository(
     finally:
         await runtime.stop()
     assert runtime.started is False
+
+
+def test_runtime_selects_enabled_deepseek_provider(tmp_path: Path) -> None:
+    """DeepSeek takes precedence when enabled and Ollama is disabled."""
+    settings = make_settings(
+        tmp_path,
+        deepseek={"enabled": True, "api_key": "sk-test"},
+        ollama={"enabled": False},
+    )
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"data": [{"id": "deepseek-flash"}]})
+
+    runtime = CodeAtlasRuntime.create(
+        settings,
+        enable_discord=False,
+        model_transport=httpx.MockTransport(handler),
+    )
+    assert runtime.model_plugin.provider.provider_id == "deepseek"
+    assert runtime.model_plugin.provider.model_id == "deepseek-flash"
 
 
 def test_cli_repos_list_json(

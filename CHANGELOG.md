@@ -9,6 +9,21 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.1.3] - 2026-10-25
+
+### Added
+
+- DeepSeek Model Provider（OpenAI互換 `/chat/completions`）: canonical tool call、JSON output、thinking制御、bounded retry、`/models` probe、degraded mode
+- `CODEATLAS_DEEPSEEK__*` 設定と`model:deepseek` built-in plugin
+- DeepSeekとOllamaの同時有効化を拒否する起動時validation
+- provider選択のcomposition root対応とMockTransportによるcontract test（live testは`CODEATLAS_TEST_DEEPSEEK=1`で任意実行）
+- ADR-0023と設定・デプロイ・READMEのDeepSeek手順
+
+### Security
+
+- DeepSeek API keyを`SecretStr`で保持し、401/403・timeout・不正応答のerror/repr/logへkey・prompt・response bodyを含めない
+- credentialed/query付きbase URLとproxy環境変数を拒否/無視し、redirectを追跡しない
+
 ## [0.1.2] - 2026-10-25
 
 ### Added

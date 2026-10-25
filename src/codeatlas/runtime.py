@@ -15,7 +15,7 @@ from typing import TextIO
 import httpx
 
 from codeatlas.adapters.discord import DiscordInteractionPlugin
-from codeatlas.adapters.model import OllamaModelPlugin
+from codeatlas.adapters.model import DeepSeekModelPlugin, OllamaModelPlugin
 from codeatlas.adapters.repository.plugin import LocalGitRepositoryPlugin
 from codeatlas.application.agent import AgentOrchestrator
 from codeatlas.application.container import ApplicationContainer
@@ -65,7 +65,7 @@ class CodeAtlasRuntime:
 
     settings: CodeAtlasSettings
     repository_plugin: LocalGitRepositoryPlugin
-    model_plugin: OllamaModelPlugin
+    model_plugin: OllamaModelPlugin | DeepSeekModelPlugin
     index_query: SqliteIndexQuery
     conversation_store: SqliteConversationStore
     tool_executor: ToolExecutor
@@ -103,10 +103,17 @@ class CodeAtlasRuntime:
             busy_timeout_seconds=settings.database.busy_timeout_seconds,
             claim_lease_seconds=settings.conversation.thread_lock_lease_seconds,
         )
-        model_plugin = OllamaModelPlugin.from_settings(
-            settings.ollama,
-            transport=model_transport,
-        )
+        model_plugin: OllamaModelPlugin | DeepSeekModelPlugin
+        if settings.deepseek.enabled:
+            model_plugin = DeepSeekModelPlugin.from_settings(
+                settings.deepseek,
+                transport=model_transport,
+            )
+        else:
+            model_plugin = OllamaModelPlugin.from_settings(
+                settings.ollama,
+                transport=model_transport,
+            )
         tool_executor = build_tool_executor(
             repository=repository_plugin.provider,
             registry=repository_plugin.registry,
@@ -185,9 +192,10 @@ class CodeAtlasRuntime:
             "runtime_started",
             extra={
                 "repositories": len(self.registered_repositories),
-                "ollama_enabled": self.settings.ollama.enabled,
-                "discord_enabled": self.settings.discord.enabled,
+                "model_provider": self.model_plugin.provider.provider_id,
+                "model_enabled": self.model_plugin.provider.enabled,
                 "model_available": self.model_plugin.available,
+                "discord_enabled": self.settings.discord.enabled,
             },
         )
 

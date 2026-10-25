@@ -50,7 +50,7 @@ docker compose logs -f codeatlas
 release image を使う場合は build を省略できる。versionを固定するため`CODEATLAS_IMAGE_TAG`へ明示tagを設定する。
 
 ```powershell
-$env:CODEATLAS_IMAGE_TAG="v0.1.2"
+$env:CODEATLAS_IMAGE_TAG="v0.1.3"
 docker compose pull
 docker compose up -d codeatlas
 ```
@@ -102,6 +102,23 @@ ollama serve
 - Ollama が到達不能でも CodeAtlas は起動し、`degraded` mode で evidence 列挙型の回答を返す。
 - thinking model では `CODEATLAS_OLLAMA__THINK=true` を検討する。reasoning text は回答本文として扱わない。
 - 回答生成は `CODEATLAS_AGENT__DEADLINE_SECONDS` と `CODEATLAS_OLLAMA__TIMEOUT_SECONDS` で制限される。
+
+## DeepSeek
+
+Ollama の代わりに DeepSeek API を利用できる。container から `https://api.deepseek.com` への outbound HTTPS が必要で、Ollama は不要である。
+
+```text
+CODEATLAS_OLLAMA__ENABLED=false
+CODEATLAS_DEEPSEEK__ENABLED=true
+CODEATLAS_DEEPSEEK__API_KEY=sk-...
+CODEATLAS_DEEPSEEK__MODEL=deepseek-flash
+CODEATLAS_DEEPSEEK__THINKING=false
+```
+
+- `CODEATLAS_DEEPSEEK__API_KEY` は secret manager から注入し、`.env.example` や image へ実値を書かない。
+- Ollama と DeepSeek の同時有効化は起動時に拒否される。
+- `/models` への probe が失敗しても起動は継続し、extractive fallback で回答する（status `partial`）。
+- DeepSeek を使う場合は host の Ollama を起動する必要はないが、Compose の `extra_hosts` はそのままでも害はない。
 
 ## Discord
 

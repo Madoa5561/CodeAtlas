@@ -5,7 +5,12 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from codeatlas.config.settings import CodeAtlasSettings, DiscordSettings, IndexingLimits
+from codeatlas.config.settings import (
+    CodeAtlasSettings,
+    DeepSeekSettings,
+    DiscordSettings,
+    IndexingLimits,
+)
 
 
 def test_disabled_integrations_do_not_require_secrets() -> None:
@@ -13,6 +18,34 @@ def test_disabled_integrations_do_not_require_secrets() -> None:
     settings = CodeAtlasSettings(_env_file=None)
     assert settings.discord.enabled is False
     assert settings.discord.token is None
+    assert settings.deepseek.enabled is False
+    assert settings.deepseek.api_key is None
+
+
+def test_enabled_deepseek_requires_api_key() -> None:
+    """DeepSeek fails fast when enabled without a key."""
+    with pytest.raises(ValidationError):
+        DeepSeekSettings(enabled=True)
+    with pytest.raises(ValidationError):
+        DeepSeekSettings(enabled=True, api_key="   ")
+    assert DeepSeekSettings(enabled=True, api_key="sk-test").model == "deepseek-flash"
+
+
+def test_only_one_model_provider_can_be_enabled() -> None:
+    """Enabling Ollama and DeepSeek together is rejected deterministically."""
+    with pytest.raises(ValidationError):
+        CodeAtlasSettings(
+            _env_file=None,
+            ollama={"enabled": True, "model": "model"},
+            deepseek={"enabled": True, "api_key": "sk-test"},
+        )
+
+
+def test_deepseek_secret_is_hidden_from_repr() -> None:
+    """The API key is a SecretStr and never appears in representations."""
+    settings = DeepSeekSettings(enabled=True, api_key="sk-hidden")
+    assert "sk-hidden" not in repr(settings)
+    assert "**********" in repr(settings)
 
 
 def test_enabled_discord_requires_credentials() -> None:
@@ -65,3 +98,4 @@ def test_env_example_covers_root_setting_sections() -> None:
     settings = CodeAtlasSettings(_env_file=".env.example")
     assert settings.discord.enabled is False
     assert settings.ollama.enabled is False
+    assert settings.deepseek.enabled is False

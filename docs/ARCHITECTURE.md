@@ -110,7 +110,7 @@ SQLiteをsource of truth、Qdrant等を再構築可能なprojectionとする。e
 | Reasoner | Ollama + extractive fallback | `application/agent/reasoner.py` |
 | Response Composer | citation付きcanonical response | `application/agent/composer.py` |
 | Tool Executor | strict validation、scope、timeout、payload上限 | `application/tools/executor.py` |
-| Model Provider | Ollama | `adapters/model/` |
+| Model Provider | Ollama / DeepSeek（OpenAI互換） | `adapters/model/` |
 | Repository Provider | local Git | `adapters/repository/` |
 | Knowledge Graph / Index | SQLite symbols/relations/text | `infrastructure/indexing/` |
 | Conversation Memory | SQLite messages/idempotency/locks | `infrastructure/conversation/` |

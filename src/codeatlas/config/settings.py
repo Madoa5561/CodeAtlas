@@ -119,6 +119,27 @@ class OllamaSettings(BaseModel):
         return self
 
 
+class DeepSeekSettings(BaseModel):
+    """DeepSeek OpenAI-compatible chat provider settings."""
+
+    enabled: bool = False
+    api_key: SecretStr | None = None
+    base_url: HttpUrl = HttpUrl("https://api.deepseek.com")
+    model: str = Field(default="deepseek-flash", min_length=1, max_length=200)
+    timeout_seconds: float = Field(default=60.0, ge=1.0, le=600.0)
+    max_retries: int = Field(default=2, ge=0, le=5)
+    retry_backoff_seconds: float = Field(default=0.5, ge=0.0, le=10.0)
+    thinking: bool = False
+
+    @model_validator(mode="after")
+    def require_api_key_when_enabled(self) -> DeepSeekSettings:
+        """Require a non-blank API key only for an enabled provider."""
+        key_missing = self.api_key is None or not self.api_key.get_secret_value().strip()
+        if self.enabled and key_missing:
+            raise ValueError("deepseek.api_key is required when DeepSeek is enabled")
+        return self
+
+
 class DiscordSettings(BaseModel):
     """Discord Forum adapter and response presentation settings."""
 
@@ -223,6 +244,7 @@ class CodeAtlasSettings(BaseSettings):
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
     ollama: OllamaSettings = Field(default_factory=OllamaSettings)
+    deepseek: DeepSeekSettings = Field(default_factory=DeepSeekSettings)
     discord: DiscordSettings = Field(default_factory=DiscordSettings)
     github: GitHubSettings = Field(default_factory=GitHubSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
@@ -230,6 +252,13 @@ class CodeAtlasSettings(BaseSettings):
     repository: RepositorySettings = Field(default_factory=RepositorySettings)
     agent: AgentSettings = Field(default_factory=AgentSettings)
     conversation: ConversationSettings = Field(default_factory=ConversationSettings)
+
+    @model_validator(mode="after")
+    def require_single_model_provider(self) -> CodeAtlasSettings:
+        """Keep model provider selection deterministic by enabling at most one."""
+        if self.ollama.enabled and self.deepseek.enabled:
+            raise ValueError("enable only one model provider: ollama or deepseek")
+        return self
 
 
 def load_settings(env_file: Path | str | None = None) -> CodeAtlasSettings:
