@@ -127,7 +127,7 @@ GitHub Webhook URLは`http://<host>:8080/webhooks/github`。Secretを設定し�
 codeatlas-admin --json index incremental /repositories/linejs HEAD
 ```
 
-APIを公開ネットワークへbindする場合はreverse proxyで認証・TLSを終端し、`/ask`の公開には注意する。
+APIを公開ネットワークへbindする場合はreverse proxyで認証・TLSを終端し、`/ask`の公開には注意する。host port 8080が使用中の場合はcompose overrideで`ports: !override`を指定して別portへ変更できる。
 
 ## DeepSeek
 
