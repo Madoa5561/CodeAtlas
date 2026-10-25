@@ -34,3 +34,4 @@
 | [0030](0030-thrift-parser-and-cross-language-links.md) | Accepted | Thrift ParserとCross-Language Relation候補 |
 | [0031](0031-multiple-model-providers.md) | Accepted | 複数Model Providerの選択とLifecycle |
 | [0032](0032-ssrf-safe-http-tool.md) | Accepted | SSRF対策付きSafe HTTP Tool |
+| [0033](0033-analysis-and-review-tools.md) | Accepted | 要約・影響分析・PR Review・Mermaid Tool |

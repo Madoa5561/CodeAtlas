@@ -173,6 +173,23 @@ class FetchHttpInput(RepositoryScopedInput):
     method: Literal["GET", "HEAD"] = "GET"
 
 
+class SummarizeInput(RepositoryScopedInput):
+    """Summarize a bounded portion of the active repository index."""
+
+    path_prefix: str | None = Field(default=None, min_length=1, max_length=4_096)
+    focus: str | None = Field(default=None, min_length=1, max_length=500)
+    limit: int = Field(default=40, ge=1, le=100)
+
+
+class AnalyzeImpactInput(RepositoryScopedInput):
+    """Analyze reverse dependencies and affected files for a symbol or file."""
+
+    start: str = Field(min_length=1, max_length=1_024)
+    start_type: Literal["symbol", "file"] = "symbol"
+    max_depth: int = Field(default=2, ge=1, le=3)
+    limit: int = Field(default=50, ge=1, le=100)
+
+
 class FindSymbolInput(RepositoryScopedInput):
     """Find declarations by exact name or qualified-name suffix."""
 
@@ -273,6 +290,10 @@ class TraverseGraphInput(RepositoryScopedInput):
     limit: int = Field(default=50, ge=1, le=100)
 
 
+class GenerateMermaidInput(TraverseGraphInput):
+    """Render a bounded graph traversal as a Mermaid flowchart."""
+
+
 _GITHUB_SLUG_PATTERN = r"^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$"
 
 
@@ -284,6 +305,12 @@ class GitHubScopedInput(RepositoryScopedInput):
         pattern=_GITHUB_SLUG_PATTERN,
         description="GitHub owner/name; defaults to the configured repository.",
     )
+
+
+class ReviewPullRequestInput(GitHubScopedInput):
+    """Review a pull request with indexed impact context."""
+
+    number: str = Field(min_length=1, max_length=7, pattern=r"^[0-9]+$")
 
 
 class GetPullRequestInput(GitHubScopedInput):

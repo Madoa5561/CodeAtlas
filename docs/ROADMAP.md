@@ -79,8 +79,9 @@ FTS、Thrift、確定Call/Dependency Graph、Qdrant projectionはM3完了範囲�
 - [ ] 確定Call/Dependency Graph resolver
 - [x] 複数Model Provider（OpenAI/Anthropic/Gemini）（v0.5.0）
 - [x] Safe HTTP Tool（SSRF対策）（v0.6.0）
+- [x] 要約、影響分析、PR review、Mermaid（v0.7.0）
+- [ ] 確定Call/Dependency Graph resolver
 - [ ] CLI、Web API、MCP
-- [ ] 要約、影響分析、PR review、Mermaid
 
 ## リリースゲート
 

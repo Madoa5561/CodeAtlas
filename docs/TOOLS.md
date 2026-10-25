@@ -28,6 +28,10 @@ Tool は repository の working tree を読まない。revision 未指定時は 
 | `search_lexical` | `repository`, `query`, `path_prefix` | FTS5/BM25 の行単位lexical検索 |
 | `search_vector` | `repository`, `query`, `limit` | Qdrant cosine vector検索（optional） |
 | `fetch_http` | `repository_id`, `url`, `method` | 許可ドメインのGET/HEAD、SSRF対策・本文抽出 |
+| `summarize_repository` | `repository`, `path_prefix`, `focus` | files/languages/symbolsのcited summary |
+| `analyze_impact` | `repository`, `start`, `start_type`, `max_depth` | 逆方向relationのimpacted files/symbols |
+| `generate_mermaid` | `repository`, `start`, `edge_kinds`, `direction` | bounded graphのMermaid flowchart |
+| `review_pull_request` | `repository_id`, `repository`, `number` | GitHub PR + changed/impacted files |
 | `traverse_graph` | `repository`, `start`, `edge_kinds`, `direction`, `max_depth` | call/dependency/reference のbounded BFS |
 | `get_pull_request` | `repository_id`, `repository`(owner/name), `number` | GitHub PR本文・state・head/base SHA |
 | `get_pull_request_diff` | `repository_id`, `repository`, `number` | GitHub PRのbounded unified diff |

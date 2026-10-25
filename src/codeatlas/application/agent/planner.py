@@ -266,6 +266,12 @@ class HeuristicPlanner:
 
         if signals.wants_repository_list:
             add(("list_repositories",))
+        if signals.wants_summary:
+            add(("summarize_repository",))
+        if signals.wants_impact:
+            add(("analyze_impact",))
+        if signals.wants_mermaid:
+            add(("generate_mermaid",))
         if signals.identifiers or signals.quoted:
             if signals.wants_definition:
                 add(("find_definition", "find_symbol"))
@@ -291,6 +297,7 @@ class HeuristicPlanner:
         if signals.wants_pull_request and signals.github_number is not None:
             add(("get_pull_request",))
             add(("get_pull_request_diff",))
+            add(("review_pull_request",))
         if signals.wants_issue:
             add(("list_issues",))
         if signals.urls:
@@ -395,6 +402,40 @@ class HeuristicPlanner:
                 purpose_en="Fetch an allowlisted external document.",
                 query=phrase,
                 extra={"url": signals.urls[0] if signals.urls else ""},
+            )
+        if tool == "summarize_repository":
+            return _Draft(
+                tool=definition,
+                purpose_ja="リポジトリの構造を要約します。",
+                purpose_en="Summarize repository structure.",
+                query=phrase,
+                directory=signals.directories[0] if signals.directories else None,
+                path=file_path,
+                extra={"focus": phrase},
+            )
+        if tool in {"analyze_impact", "generate_mermaid"}:
+            start = name or file_path or phrase
+            return _Draft(
+                tool=definition,
+                purpose_ja="影響範囲と呼び出し関係を分析します。",
+                purpose_en="Analyze impact and graph relationships.",
+                name=name,
+                path=file_path,
+                query=phrase,
+                extra={
+                    "start": start,
+                    "start_type": (
+                        "file" if not signals.identifiers and file_path is not None else "symbol"
+                    ),
+                },
+            )
+        if tool == "review_pull_request":
+            return _Draft(
+                tool=definition,
+                purpose_ja="pull requestと影響範囲をレビューします。",
+                purpose_en="Review the pull request with impact context.",
+                query=phrase,
+                extra={"number": str(signals.github_number or "")},
             )
         if tool == "find_callees":
             return _Draft(

@@ -10,6 +10,7 @@ from typing import Any, Generic, TypeVar, cast
 from pydantic import BaseModel
 
 from codeatlas.application.tools import (
+    analysis_tools,
     git_tools,
     github_tools,
     index_tools,
@@ -19,6 +20,7 @@ from codeatlas.application.tools import (
 from codeatlas.application.tools.registry import RegisteredTool, ToolRegistry
 from codeatlas.application.tools.resolver import ToolServices
 from codeatlas.application.tools.schemas import (
+    AnalyzeImpactInput,
     CompareRefsInput,
     FetchHttpInput,
     FindCalleesInput,
@@ -27,6 +29,7 @@ from codeatlas.application.tools.schemas import (
     FindExportsInput,
     FindReferencesInput,
     FindSymbolInput,
+    GenerateMermaidInput,
     GetBlameInput,
     GetCommitInput,
     GetDependenciesInput,
@@ -42,11 +45,13 @@ from codeatlas.application.tools.schemas import (
     ListRepositoriesInput,
     ListTagsInput,
     ReadFileInput,
+    ReviewPullRequestInput,
     SearchCodeInput,
     SearchCommitsInput,
     SearchLexicalInput,
     SearchTextInput,
     SearchVectorInput,
+    SummarizeInput,
     ToolResult,
     TraverseGraphInput,
 )
@@ -172,6 +177,34 @@ TOOL_SPECS: tuple[ToolSpec[Any], ...] = (
         + _REPOSITORY_ARG,
         FetchHttpInput,
         web_tools.fetch_http,
+    ),
+    ToolSpec(
+        "summarize_repository",
+        "Summarize indexed files, languages, symbol kinds, and top declarations with "
+        "verified provenance. " + _REPOSITORY_ARG,
+        SummarizeInput,
+        analysis_tools.summarize_repository,
+    ),
+    ToolSpec(
+        "analyze_impact",
+        "Walk reverse dependency/reference relations from a symbol or file and return "
+        "impacted files and symbols. " + _REPOSITORY_ARG,
+        AnalyzeImpactInput,
+        analysis_tools.analyze_impact,
+    ),
+    ToolSpec(
+        "generate_mermaid",
+        "Render a bounded call/dependency graph traversal as a Mermaid flowchart. "
+        + _REPOSITORY_ARG,
+        GenerateMermaidInput,
+        analysis_tools.generate_mermaid,
+    ),
+    ToolSpec(
+        "review_pull_request",
+        "Review a GitHub pull request together with changed files, indexed symbols, and "
+        "reverse-impact context. " + _REPOSITORY_ARG,
+        ReviewPullRequestInput,
+        analysis_tools.review_pull_request,
     ),
     ToolSpec(
         "find_symbol",

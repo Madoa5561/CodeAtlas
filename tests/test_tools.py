@@ -61,12 +61,14 @@ _BIG_TEXT = ("z" * 90 + "\n") * 1_000
 _SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 EXPECTED_TOOL_NAMES = {
+    "analyze_impact",
     "compare_refs",
     "find_callees",
     "find_callers",
     "find_definition",
     "find_exports",
     "fetch_http",
+    "generate_mermaid",
     "find_references",
     "find_symbol",
     "get_blame",
@@ -84,9 +86,11 @@ EXPECTED_TOOL_NAMES = {
     "list_repositories",
     "list_tags",
     "read_file",
+    "review_pull_request",
     "search_code",
     "search_lexical",
     "search_vector",
+    "summarize_repository",
     "search_commits",
     "search_text",
     "traverse_graph",
@@ -253,6 +257,10 @@ async def test_catalog_definitions_match_strict_schemas(tool_stack: ToolStack) -
     assert schemas["search_lexical"]["required"] == ["query"]
     assert schemas["search_vector"]["required"] == ["query"]
     assert schemas["fetch_http"]["required"] == ["url"]
+    assert schemas["analyze_impact"]["required"] == ["start"]
+    assert schemas["generate_mermaid"]["required"] == ["start"]
+    assert schemas["review_pull_request"]["required"] == ["number"]
+    assert schemas["summarize_repository"].get("required", []) == []
     assert schemas["traverse_graph"]["required"] == ["start"]
     assert schemas["get_pull_request"]["required"] == ["number"]
     assert schemas["get_pull_request_diff"]["required"] == ["number"]
@@ -811,3 +819,37 @@ async def test_history_and_diff_tools(tool_stack: ToolStack) -> None:
         tool_stack.first_sha,
     ]
     assert all(item.path.as_posix() == "src/service.ts" for item in history.evidence)
+
+
+@pytest.mark.asyncio
+async def test_summary_impact_and_mermaid_tools(tool_stack: ToolStack) -> None:
+    """Analysis tools expose cited structure, impact, and Mermaid output."""
+    summary = await _execute(
+        tool_stack,
+        "summarize_repository",
+        {"focus": "service symbols"},
+    )
+    assert summary.ok
+    summary_payload = _payload(summary)
+    assert summary_payload["files"] > 0
+    assert summary.evidence[0].retrieval_method == "index_summary"
+
+    impact = await _execute(
+        tool_stack,
+        "analyze_impact",
+        {"start": "helper", "start_type": "symbol", "max_depth": 2},
+    )
+    assert impact.ok
+    impact_payload = _payload(impact)
+    assert impact_payload["count"] >= 1
+    assert any(item.path.as_posix() == "src/service.ts" for item in impact.evidence)
+
+    mermaid = await _execute(
+        tool_stack,
+        "generate_mermaid",
+        {"start": "Service", "start_type": "symbol", "edge_kinds": ["call", "reference"]},
+    )
+    assert mermaid.ok
+    mermaid_payload = _payload(mermaid)
+    assert mermaid_payload["mermaid"].startswith("flowchart LR")
+    assert any(item.retrieval_method == "graph_mermaid" for item in mermaid.evidence)

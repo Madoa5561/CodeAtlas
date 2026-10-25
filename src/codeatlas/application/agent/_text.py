@@ -269,6 +269,9 @@ _GITHUB_NUMBER = re.compile(
     re.IGNORECASE,
 )
 _URL_PATTERN = re.compile(r"https?://[^\s<>\"'\)\]]+", re.IGNORECASE)
+_SUMMARY_KEYWORDS = ("summarize", "summary", "要約", "概要", "全体像")
+_IMPACT_KEYWORDS = ("impact", "影響範囲", "影響", "変更影響", "破壊的")
+_MERMAID_KEYWORDS = ("mermaid", "diagram", "フローチャート", "可視化", "図")
 
 _ASCII_KEYWORD = re.compile(r"^[a-z0-9 ]+$")
 
@@ -458,6 +461,9 @@ class QuerySignals:
     wants_issue: bool
     github_number: int | None
     urls: tuple[str, ...]
+    wants_summary: bool
+    wants_impact: bool
+    wants_mermaid: bool
 
     @property
     def search_phrase(self) -> str:
@@ -503,6 +509,9 @@ class QuerySignals:
                 self.wants_issue,
                 self.github_number,
                 self.urls,
+                self.wants_summary,
+                self.wants_impact,
+                self.wants_mermaid,
             )
         )
 
@@ -545,6 +554,9 @@ def analyze(query: str) -> QuerySignals:
         wants_issue=_matches_any(folded, _ISSUE_KEYWORDS),
         github_number=(int(number.group(1)) if (number := _GITHUB_NUMBER.search(query)) else None),
         urls=tuple(dict.fromkeys(match.group(0) for match in _URL_PATTERN.finditer(query)))[:3],
+        wants_summary=_matches_any(folded, _SUMMARY_KEYWORDS),
+        wants_impact=_matches_any(folded, _IMPACT_KEYWORDS),
+        wants_mermaid=_matches_any(folded, _MERMAID_KEYWORDS),
     )
 
 

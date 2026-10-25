@@ -9,6 +9,27 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.7.0] - 2026-10-25
+
+### Added
+
+- M7 analysis tools
+  - `summarize_repository`: files/languages/symbol kinds/top declarationsのcited summary
+  - `analyze_impact`: 逆方向relation BFSによるimpacted files/symbols
+  - `generate_mermaid`: bounded graph traversalからMermaid flowchart生成
+  - `review_pull_request`: GitHub PR + changed files + indexed symbol/reverse-impact context
+- Planner intents: 要約、影響範囲、Mermaid、PR review
+- ADR-0033
+
+### Changed
+
+- Tool catalogが33 toolsへ拡張
+- Mermaid/impact/summaryは既存のrelation候補とconfidenceを再利用
+
+### Notes
+
+PR reviewはGitHub token未設定のためlive未検証（Mock契約テストで検証）。確定Call Graph resolverは未実装で、relationは引き続きcandidateである。
+
 ## [0.6.0] - 2026-10-25
 
 ### Added

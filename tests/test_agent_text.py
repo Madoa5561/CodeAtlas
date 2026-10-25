@@ -118,3 +118,20 @@ async def test_planner_url_intent_uses_fetch_http() -> None:
 
     fetch_step = next(step for step in plan.steps if step.tool_name == "fetch_http")
     assert json.loads(fetch_step.arguments_json)["url"] == "https://docs.example.com/guide"
+
+
+@pytest.mark.asyncio
+async def test_planner_analysis_intents() -> None:
+    """Summary, impact, and Mermaid intents schedule their analysis tools."""
+    catalog = build_tool_registry().definitions()
+    planner = HeuristicPlanner()
+    summary = await planner.plan(make_context("リポジトリを要約して"), catalog, AgentLimits())
+    assert "summarize_repository" in [step.tool_name for step in summary.steps]
+
+    impact = await planner.plan(make_context("Client の影響範囲を教えて"), catalog, AgentLimits())
+    assert "analyze_impact" in [step.tool_name for step in impact.steps]
+
+    mermaid = await planner.plan(
+        make_context("Client の呼び出し関係をmermaidで"), catalog, AgentLimits()
+    )
+    assert "generate_mermaid" in [step.tool_name for step in mermaid.steps]
