@@ -90,11 +90,15 @@ CODEATLAS_DEEPSEEK__THINKING=false
 CODEATLAS_GITHUB__ENABLED=true
 CODEATLAS_GITHUB__TOKEN=...
 CODEATLAS_GITHUB__DEFAULT_REPOSITORY=evex-dev/linejs
+CODEATLAS_GITHUB__WEBHOOK_REPOSITORY=evex-dev/linejs
+CODEATLAS_GITHUB__WEBHOOK_REPOSITORY_ID=repo_...
 CODEATLAS_GITHUB__WEBHOOK_SECRET=...
 ```
 
 - `TOKEN`はread-only GitHub API用。未設定で`ENABLED=true`は起動時に失敗する。
 - `DEFAULT_REPOSITORY`はtool引数でowner/nameを省略した場合に使う。
+- `WEBHOOK_REPOSITORY`と`WEBHOOK_REPOSITORY_ID`を両方設定すると、一致するpush Webhookでそのlocal repositoryをincremental indexする。片方だけの設定は起動時に拒否される。
+- Webhook indexは直列化・coalesceされ、HTTP応答は完了を待たない。local cloneの更新は前提。
 - PR/Issueはexternal evidenceとしてcitationにGitHub URLを付ける。PRはhead SHA、Issueはactive index snapshot SHAを文脈SHAとする。
 - GitHub toolsはlocal repositoryのactive indexを要求する。
 

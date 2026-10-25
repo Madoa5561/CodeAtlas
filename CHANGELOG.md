@@ -9,6 +9,20 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.2.3] - 2026-10-25
+
+### Added
+
+- GitHub push Webhookから登録済みlocal repositoryのincremental indexを起動（`WebhookSyncService`）
+- `CODEATLAS_GITHUB__WEBHOOK_REPOSITORY` / `WEBHOOK_REPOSITORY_ID` によるrepository mapping
+- 同時pushのcoalescing、失敗の安全な記録、shutdown時のcancel
+- Webhook responseの`indexing`フィールド（scheduled/ignored/duplicate/disabled）
+- ADR-0028
+
+### Note
+
+Webhookはlocal cloneが更新済みであることを前提とする。GitHubからの`git fetch`はまだ自動化していない。
+
 ## [0.2.2] - 2026-10-25
 
 ### Added

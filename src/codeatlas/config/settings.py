@@ -176,6 +176,16 @@ class GitHubSettings(BaseModel):
         pattern=r"^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$",
         description="Default owner/name used when a GitHub tool omits the repository.",
     )
+    webhook_repository: str | None = Field(
+        default=None,
+        pattern=r"^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$",
+        description="Owner/name whose push webhooks trigger an incremental index.",
+    )
+    webhook_repository_id: str | None = Field(
+        default=None,
+        pattern=r"^repo_[0-9a-f]{32}$",
+        description="Registered local repository indexed for matching push webhooks.",
+    )
 
     @model_validator(mode="after")
     def require_token_when_enabled(self) -> GitHubSettings:
@@ -183,6 +193,10 @@ class GitHubSettings(BaseModel):
         token_missing = self.token is None or not self.token.get_secret_value().strip()
         if self.enabled and token_missing:
             raise ValueError("github.token is required when GitHub is enabled")
+        if (self.webhook_repository is None) != (self.webhook_repository_id is None):
+            raise ValueError(
+                "github.webhook_repository and github.webhook_repository_id must be set together"
+            )
         return self
 
 

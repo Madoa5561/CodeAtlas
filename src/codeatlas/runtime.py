@@ -20,25 +20,32 @@ from codeatlas.adapters.github import GitHubRestClient
 from codeatlas.adapters.http.api import ApiServices, create_api_app
 from codeatlas.adapters.http.plugin import ApiServerPlugin
 from codeatlas.adapters.model import DeepSeekModelPlugin, OllamaModelPlugin
+from codeatlas.adapters.parsing.tree_sitter_parser import TreeSitterTypeScriptParser
 from codeatlas.adapters.repository.plugin import LocalGitRepositoryPlugin
 from codeatlas.application.agent import AgentOrchestrator
 from codeatlas.application.container import ApplicationContainer
+from codeatlas.application.indexing import IndexingPolicy, TransactionalIndexingService
 from codeatlas.application.interactions import InteractionApplicationService
 from codeatlas.application.tools import (
     ToolExecutionPolicy,
     ToolExecutor,
     build_tool_executor,
 )
+from codeatlas.application.webhook_sync import WebhookSyncService
 from codeatlas.bootstrap import create_application
 from codeatlas.config.settings import CodeAtlasSettings
 from codeatlas.domain.agent_models import AgentLimits
 from codeatlas.domain.errors import IndexSchemaError
-from codeatlas.domain.repository_models import RepositoryDescriptor, RepositoryLocation
+from codeatlas.domain.repository_models import (
+    RepositoryDescriptor,
+    RepositoryId,
+    RepositoryLocation,
+)
 from codeatlas.domain.retrieval_models import RetrievalLimits
 from codeatlas.infrastructure.conversation import SqliteConversationStore
 from codeatlas.infrastructure.indexing.migrations import current_revision
 from codeatlas.infrastructure.indexing.query import SqliteIndexQuery
-from codeatlas.infrastructure.indexing.store import SCHEMA_REVISION
+from codeatlas.infrastructure.indexing.store import SCHEMA_REVISION, SqliteIndexStore
 from codeatlas.infrastructure.webhook.store import SqliteWebhookStore
 
 logger = logging.getLogger(__name__)
@@ -81,6 +88,8 @@ class CodeAtlasRuntime:
     discord_plugin: DiscordInteractionPlugin | None = None
     api_plugin: ApiServerPlugin | None = None
     github_client: GitHubRestClient | None = None
+    index_store: SqliteIndexStore | None = None
+    webhook_sync: WebhookSyncService | None = None
     registered_repositories: tuple[RepositoryDescriptor, ...] = ()
     _started: bool = field(default=False, repr=False)
 
@@ -119,6 +128,43 @@ class CodeAtlasRuntime:
         github_client = (
             GitHubRestClient.from_settings(settings.github) if settings.github.enabled else None
         )
+        index_store: SqliteIndexStore | None = None
+        webhook_sync: WebhookSyncService | None = None
+        if (
+            enable_api
+            and settings.api.enabled
+            and settings.github.webhook_repository is not None
+            and settings.github.webhook_repository_id is not None
+        ):
+            parser = TreeSitterTypeScriptParser(
+                max_source_bytes=settings.indexing.max_file_bytes,
+                max_nodes=settings.indexing.max_parser_nodes,
+                max_depth=settings.indexing.max_parser_depth,
+            )
+            index_store = SqliteIndexStore(
+                settings.database.url,
+                busy_timeout_seconds=settings.database.busy_timeout_seconds,
+            )
+            indexing = TransactionalIndexingService(
+                repository_plugin.provider,
+                index_store,
+                (parser,),
+                IndexingPolicy(
+                    max_repository_files=settings.indexing.max_repository_files,
+                    max_concurrency=settings.indexing.max_concurrency,
+                    operation_timeout_seconds=settings.indexing.operation_timeout_seconds,
+                    lease_timeout_seconds=settings.database.lease_timeout_seconds,
+                    lock_wait_timeout_seconds=settings.database.lock_wait_timeout_seconds,
+                    max_failure_rate=settings.indexing.max_failure_rate,
+                    exclude_generated=settings.indexing.exclude_generated,
+                    exclude_minified=settings.indexing.exclude_minified,
+                ),
+            )
+            webhook_sync = WebhookSyncService(
+                indexing,
+                RepositoryId(settings.github.webhook_repository_id),
+                settings.github.webhook_repository,
+            )
         model_plugin: OllamaModelPlugin | DeepSeekModelPlugin
         if settings.deepseek.enabled:
             model_plugin = DeepSeekModelPlugin.from_settings(
@@ -188,6 +234,7 @@ class CodeAtlasRuntime:
                     github_webhook_secret=github_secret,
                     allow_ask=settings.api.allow_ask,
                     max_body_bytes=settings.api.max_body_bytes,
+                    webhook_sync=webhook_sync,
                 )
             )
             api_plugin = ApiServerPlugin.from_settings(api_app, settings.api)
@@ -211,6 +258,8 @@ class CodeAtlasRuntime:
             discord_plugin=discord_plugin,
             api_plugin=api_plugin,
             github_client=github_client,
+            index_store=index_store,
+            webhook_sync=webhook_sync,
         )
 
     @property
@@ -249,6 +298,8 @@ class CodeAtlasRuntime:
         try:
             await self.container.stop()
         finally:
+            if self.webhook_sync is not None:
+                await self.webhook_sync.stop()
             await self.index_query.aclose()
             await self.conversation_store.close()
             await self.webhook_store.close()

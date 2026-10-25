@@ -68,7 +68,7 @@ FTS、Thrift、確定Call/Dependency Graph、Qdrant projectionはM3完了範囲�
 - [x] SQLite FTS5/BM25 lexical retrieval（v0.2.0）
 - [x] graph traversal Tool（v0.2.0）
 - [x] GitHub PR/Issue read-only tools（v0.2.2）
-- [ ] Webhookからの自動index更新
+- [x] Webhookからの自動index更新（v0.2.3）
 - [ ] Qdrant、embedding、fusion/reranking、freshness benchmark
 - [ ] GitHub App/Webhook、manual sync、PR/Issue Tool
 - [ ] Web API

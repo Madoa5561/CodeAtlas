@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -82,6 +82,23 @@ class FakeWebhookStore:
         fresh = delivery_id not in self.seen
         self.seen.add(delivery_id)
         return fresh
+
+
+@dataclass
+class FakeWebhookSync:
+    """Background index trigger double."""
+
+    calls: list[tuple[str, str | None, str]] = field(default_factory=list)
+
+    async def request(
+        self,
+        *,
+        event: str,
+        repository: str | None,
+        delivery_id: str,
+    ) -> str:
+        self.calls.append((event, repository, delivery_id))
+        return "scheduled" if event == "push" else "ignored"
 
 
 def make_response() -> CanonicalResponse:
@@ -203,6 +220,8 @@ def webhook_headers(body: bytes, secret: str, delivery: str = "delivery-1") -> d
 @pytest.mark.asyncio
 async def test_webhook_verification_and_idempotency() -> None:
     services, _, store = make_services()
+    sync = FakeWebhookSync()
+    services = replace(services, webhook_sync=sync)
     body = json.dumps({"repository": {"full_name": "evex-dev/linejs"}}).encode()
     async with client_for(services) as client:
         first = await client.post(
@@ -214,9 +233,12 @@ async def test_webhook_verification_and_idempotency() -> None:
 
     assert first.status_code == 202
     assert first.json()["duplicate"] is False
+    assert first.json()["indexing"] == "scheduled"
     assert second.status_code == 202
     assert second.json()["duplicate"] is True
+    assert second.json()["indexing"] == "duplicate"
     assert store.seen == {"delivery-1"}
+    assert sync.calls == [("push", "evex-dev/linejs", "delivery-1")]
 
 
 @pytest.mark.asyncio

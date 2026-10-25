@@ -113,6 +113,8 @@ CODEATLAS_API__HOST=0.0.0.0
 CODEATLAS_API__PORT=8080
 CODEATLAS_API__ALLOW_ASK=true
 CODEATLAS_GITHUB__WEBHOOK_SECRET=...
+CODEATLAS_GITHUB__WEBHOOK_REPOSITORY=evex-dev/linejs
+CODEATLAS_GITHUB__WEBHOOK_REPOSITORY_ID=repo_...
 ```
 
 ```powershell
@@ -121,7 +123,9 @@ curl.exe http://127.0.0.1:8080/repositories
 curl.exe -X POST http://127.0.0.1:8080/ask -H "Content-Type: application/json" -d "{\"question\":\"Client はどこ?\",\"locale\":\"ja\"}"
 ```
 
-GitHub Webhook URLは`http://<host>:8080/webhooks/github`。Secretを設定し、`push`/`pull_request`/`issues` eventを送る。現在は署名検証・delivery ID冪等記録までで、**Webhookからの自動index更新は未実装**である。local cloneを更新した後に次を実行する。
+GitHub Webhook URLは`http://<host>:8080/webhooks/github`。Secretを設定し、`push`/`pull_request`/`issues` eventを送る。`WEBHOOK_REPOSITORY`と`WEBHOOK_REPOSITORY_ID`を設定すると、一致するpush eventでlocal repositoryのincremental indexがbackground実行される。HTTP応答はindex完了を待たず、`indexing`フィールドで受付状態を返す。
+
+**Webhook indexはhost側のlocal cloneが更新済みであることが前提**。GitHubから自動`git fetch`はしない。clone更新後に手動で同期する場合は次を実行できる。
 
 ```powershell
 codeatlas-admin --json index incremental /repositories/linejs HEAD

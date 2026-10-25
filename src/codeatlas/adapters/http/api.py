@@ -57,6 +57,18 @@ class WebhookStorePort(Protocol):
     ) -> bool: ...
 
 
+class WebhookSyncPort(Protocol):
+    """Background index trigger used after a fresh push delivery."""
+
+    async def request(
+        self,
+        *,
+        event: str,
+        repository: str | None,
+        delivery_id: str,
+    ) -> str: ...
+
+
 @dataclass(frozen=True, slots=True)
 class ApiServices:
     """Collaborators required by the API routes."""
@@ -68,6 +80,7 @@ class ApiServices:
     github_webhook_secret: str | None
     allow_ask: bool
     max_body_bytes: int
+    webhook_sync: WebhookSyncPort | None = None
 
 
 def verify_github_signature(body: bytes, header: str | None, secret: str) -> bool:
@@ -254,6 +267,15 @@ def create_api_app(services: ApiServices) -> FastAPI:
             action=action,
             repository=repository,
         )
+        indexing = "duplicate"
+        if fresh and services.webhook_sync is not None:
+            indexing = await services.webhook_sync.request(
+                event=event,
+                repository=repository,
+                delivery_id=delivery_id,
+            )
+        elif fresh:
+            indexing = "disabled"
         return JSONResponse(
             status_code=202,
             content={
@@ -261,6 +283,7 @@ def create_api_app(services: ApiServices) -> FastAPI:
                 "event": event,
                 "accepted": True,
                 "duplicate": not fresh,
+                "indexing": indexing,
             },
         )
 
