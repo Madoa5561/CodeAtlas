@@ -32,6 +32,7 @@ from codeatlas.application.tools.schemas import (
     GetDependenciesInput,
     GetDependentsInput,
     SearchLexicalInput,
+    SearchVectorInput,
     ToolResult,
     TraverseGraphInput,
 )
@@ -318,6 +319,57 @@ async def search_lexical(
                 {
                     "path": hit.path.as_posix(),
                     "line": hit.line,
+                    "excerpt": hit.excerpt,
+                    "score": round(hit.score, 6),
+                }
+                for hit in hits
+            ],
+            "count": len(hits),
+        },
+        evidence=evidence,
+        truncated=len(hits) >= limit,
+    )
+
+
+async def search_vector(
+    services: ToolServices, context: ToolContext, arguments: SearchVectorInput
+) -> ToolResult:
+    """Search the active vector projection with a bounded query."""
+    if services.vector is None:
+        raise NotFoundError("Vector search is not enabled.")
+    descriptor = resolve_repository(services, context, arguments.repository_id)
+    snapshot, generation_id = await require_snapshot(services, descriptor)
+    limit = clamp_limit(arguments.limit, 50)
+    hits = await services.vector.search(
+        descriptor.repository_id,
+        generation_id,
+        arguments.query,
+        limit,
+    )
+    evidence = tuple(
+        make_evidence(
+            kind=EvidenceKind.FILE_EXCERPT,
+            descriptor=descriptor,
+            commit_sha=hit.commit_sha,
+            path=hit.path,
+            start_line=hit.start_line,
+            end_line=hit.end_line,
+            excerpt=hit.excerpt,
+            retrieval_method="vector_search",
+            confidence=min(1.0, max(0.1, (hit.score + 1.0) / 2.0)),
+        )
+        for hit in hits
+    )
+    return ToolResult(
+        {
+            "repository_id": descriptor.repository_id.value,
+            "commit_sha": snapshot.commit_sha,
+            "query": arguments.query,
+            "hits": [
+                {
+                    "path": hit.path.as_posix(),
+                    "start_line": hit.start_line,
+                    "end_line": hit.end_line,
                     "excerpt": hit.excerpt,
                     "score": round(hit.score, 6),
                 }

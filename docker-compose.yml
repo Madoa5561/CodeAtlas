@@ -13,8 +13,8 @@ services:
       CODEATLAS_APPLICATION__ENVIRONMENT: production
       CODEATLAS_LOGGING__FORMAT: json
       CODEATLAS_DATABASE__URL: sqlite:////app/data/codeatlas.db
-      CODEATLAS_QDRANT__ENABLED: "false"
-      CODEATLAS_QDRANT__URL: http://qdrant:6333
+      CODEATLAS_QDRANT__ENABLED: "${CODEATLAS_QDRANT__ENABLED:-false}"
+      CODEATLAS_QDRANT__URL: ${CODEATLAS_QDRANT__URL:-http://qdrant:6333}
       CODEATLAS_OLLAMA__BASE_URL: ${CODEATLAS_OLLAMA__BASE_URL:-http://host.docker.internal:11434}
     extra_hosts:
       - host.docker.internal:host-gateway

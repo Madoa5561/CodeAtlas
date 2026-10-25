@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field, HttpUrl, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -90,12 +91,16 @@ class ConversationSettings(BaseModel):
 
 
 class QdrantSettings(BaseModel):
-    """Qdrant connection settings; no client is created in M1."""
+    """Qdrant vector projection settings."""
 
     enabled: bool = False
     url: HttpUrl = HttpUrl("http://qdrant:6333")
     api_key: SecretStr | None = None
-    timeout_seconds: float = Field(default=10.0, ge=0.1, le=120.0)
+    collection: str = Field(
+        default="codeatlas_chunks",
+        pattern=r"^[A-Za-z0-9_-]{1,64}$",
+    )
+    timeout_seconds: float = Field(default=15.0, ge=1.0, le=120.0)
 
 
 class OllamaSettings(BaseModel):
@@ -210,6 +215,27 @@ class ApiSettings(BaseModel):
     allow_ask: bool = True
 
 
+class EmbeddingSettings(BaseModel):
+    """Embedding provider settings for vector retrieval."""
+
+    enabled: bool = False
+    provider: Literal["openai-compatible", "local"] = "openai-compatible"
+    api_url: HttpUrl = HttpUrl("https://api.openai.com/v1")
+    api_key: SecretStr | None = None
+    model: str = Field(default="text-embedding-3-small", min_length=1, max_length=128)
+    dimensions: int = Field(default=1_536, ge=8, le=4_096)
+    timeout_seconds: float = Field(default=30.0, ge=1.0, le=120.0)
+    batch_size: int = Field(default=16, ge=1, le=128)
+
+    @model_validator(mode="after")
+    def require_api_key_for_remote(self) -> EmbeddingSettings:
+        """A remote embedding provider requires an API key."""
+        if self.enabled and self.provider == "openai-compatible":
+            if self.api_key is None or not self.api_key.get_secret_value().strip():
+                raise ValueError("embedding.api_key is required for openai-compatible")
+        return self
+
+
 class SecuritySettings(BaseModel):
     """Security defaults applied by future adapters."""
 
@@ -277,6 +303,7 @@ class CodeAtlasSettings(BaseSettings):
     discord: DiscordSettings = Field(default_factory=DiscordSettings)
     github: GitHubSettings = Field(default_factory=GitHubSettings)
     api: ApiSettings = Field(default_factory=ApiSettings)
+    embedding: EmbeddingSettings = Field(default_factory=EmbeddingSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     indexing: IndexingLimits = Field(default_factory=IndexingLimits)
     repository: RepositorySettings = Field(default_factory=RepositorySettings)
@@ -288,6 +315,8 @@ class CodeAtlasSettings(BaseSettings):
         """Keep model provider selection deterministic by enabling at most one."""
         if self.ollama.enabled and self.deepseek.enabled:
             raise ValueError("enable only one model provider: ollama or deepseek")
+        if self.qdrant.enabled and not self.embedding.enabled:
+            raise ValueError("embedding.enabled is required when qdrant is enabled")
         return self
 
 

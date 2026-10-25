@@ -44,3 +44,18 @@ The previous active generation is compared by normalized path and Git object ID.
 - Japanese text is constrained by the `unicode61` tokenizer, so literal search and symbol search remain part of hybrid retrieval
 
 Graph traversal is implemented over the same relation candidates. `traverse_graph` starts from a symbol or file and performs bounded BFS with edge-kind, direction, depth, and result caps. Relation candidates retain provenance and confidence; they are not final resolved call edges.
+
+## Vector Projection (M6)
+
+`search_vector` is an optional Qdrant projection over the same safe SQLite content. It is not part of the index transaction and is rebuilt explicitly:
+
+```text
+codeatlas-admin vector rebuild <repository-path>
+codeatlas-admin vector status <repository-path>
+```
+
+- chunks are 40 lines with 8-line overlap (max 50 chunks/file)
+- embedding is OpenAI-compatible, with a deterministic local hash provider for offline tests
+- point payloads carry repository, generation, commit, path, and line range
+- Qdrant filters enforce repository and generation, so stale generations cannot leak into answers
+- `vector status` reports points and count latency; `fresh` means the active generation has points

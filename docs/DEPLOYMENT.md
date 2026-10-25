@@ -133,6 +133,31 @@ codeatlas-admin --json index incremental /repositories/linejs HEAD
 
 APIを公開ネットワークへbindする場合はreverse proxyで認証・TLSを終端し、`/ask`の公開には注意する。host port 8080が使用中の場合はcompose overrideで`ports: !override`を指定して別portへ変更できる。
 
+## Vector Search (optional)
+
+Qdrantを使う場合はprofileを起動し、embeddingとQdrantを有効化する。
+
+```powershell
+docker compose --profile qdrant up -d qdrant
+```
+
+```text
+CODEATLAS_EMBEDDING__ENABLED=true
+CODEATLAS_EMBEDDING__PROVIDER=openai-compatible
+CODEATLAS_EMBEDDING__API_KEY=...
+CODEATLAS_QDRANT__ENABLED=true
+CODEATLAS_QDRANT__URL=http://qdrant:6333
+```
+
+projectionは手動で構築する。
+
+```powershell
+docker compose run --rm codeatlas codeatlas-admin --json vector rebuild /repositories/linejs
+docker compose run --rm codeatlas codeatlas-admin --json vector status /repositories/linejs
+```
+
+`fresh=true`はactive generationのpointsが存在することを示す。index更新後は再rebuildが必要。
+
 ## DeepSeek
 
 Ollama の代わりに DeepSeek API を利用できる。container から `https://api.deepseek.com` への outbound HTTPS が必要で、Ollama は不要である。

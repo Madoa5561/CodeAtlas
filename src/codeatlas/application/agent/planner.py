@@ -271,6 +271,8 @@ class HeuristicPlanner:
                 add(("find_definition", "find_symbol"))
         if "search_lexical" in by_name:
             add(("search_lexical",))
+        if "search_vector" in by_name:
+            add(("search_vector",))
         search_tools = (
             ("search_code", "search_text")
             if signals.identifiers

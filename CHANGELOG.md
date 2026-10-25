@@ -9,6 +9,26 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.3.0] - 2026-10-25
+
+### Added
+
+- M6 vector retrieval: OpenAI-compatible embedding provider、offline deterministic local embedding
+- Qdrant REST adapter（collection作成、generation-scoped upsert/search/count/delete）
+- `VectorProjector`（line chunk、batch embedding、deterministic UUID point）
+- `search_vector` Tool（cosine検索、vector_search evidence）
+- `codeatlas-admin vector rebuild` / `vector status`（freshness・points・latency）
+- Qdrant Compose profile、`CODEATLAS_EMBEDDING__*` / `CODEATLAS_QDRANT__*` 設定、ADR-0029
+
+### Changed
+
+- Tool catalogが28 toolsへ拡張
+- M6のretrievalはFTS5/BM25 + literal + vectorを併用可能
+
+### Notes
+
+Vector projectionは自動更新ではない。index更新後に`codeatlas-admin vector rebuild`を実行する。Qdrant未設定時は`search_vector`が安全に失敗する。
+
 ## [0.2.3] - 2026-10-25
 
 ### Added

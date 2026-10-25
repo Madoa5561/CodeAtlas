@@ -224,3 +224,17 @@ class GitHubNotFoundError(GitHubProviderError, NotFoundError):
 
     default_safe_message = "The requested GitHub resource was not found."
     code = "github_not_found"
+
+
+class EmbeddingProviderError(ProviderError):
+    """An embedding provider failed safely."""
+
+    default_safe_message = "The embedding provider is temporarily unavailable."
+    code = "embedding_provider_error"
+
+
+class VectorIndexError(ProviderError):
+    """A vector collection operation failed safely."""
+
+    default_safe_message = "The vector index is temporarily unavailable."
+    code = "vector_index_error"

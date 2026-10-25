@@ -36,6 +36,7 @@ from codeatlas.domain.retrieval_models import (
     SymbolQuery,
 )
 from codeatlas.domain.retrieval_ports import IndexQueryPort
+from codeatlas.domain.vector_ports import VectorQueryPort
 
 
 class ToolIndexPort(IndexQueryPort, Protocol):
@@ -79,6 +80,7 @@ class ToolServices:
     limits: RetrievalLimits = field(default_factory=RetrievalLimits)
     github: GitHubReadOnlyPort | None = None
     default_github_repository: str | None = None
+    vector: VectorQueryPort | None = None
 
 
 def authorized_repositories(

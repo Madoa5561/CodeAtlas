@@ -16,12 +16,14 @@ import httpx
 
 from codeatlas import __version__
 from codeatlas.adapters.discord import DiscordInteractionPlugin
+from codeatlas.adapters.embedding import build_embedding_provider
 from codeatlas.adapters.github import GitHubRestClient
 from codeatlas.adapters.http.api import ApiServices, create_api_app
 from codeatlas.adapters.http.plugin import ApiServerPlugin
 from codeatlas.adapters.model import DeepSeekModelPlugin, OllamaModelPlugin
 from codeatlas.adapters.parsing.tree_sitter_parser import TreeSitterTypeScriptParser
 from codeatlas.adapters.repository.plugin import LocalGitRepositoryPlugin
+from codeatlas.adapters.vector import build_vector_index
 from codeatlas.application.agent import AgentOrchestrator
 from codeatlas.application.container import ApplicationContainer
 from codeatlas.application.indexing import IndexingPolicy, TransactionalIndexingService
@@ -31,6 +33,7 @@ from codeatlas.application.tools import (
     ToolExecutor,
     build_tool_executor,
 )
+from codeatlas.application.vector_projection import VectorSearchService
 from codeatlas.application.webhook_sync import WebhookSyncService
 from codeatlas.bootstrap import create_application
 from codeatlas.config.settings import CodeAtlasSettings
@@ -42,6 +45,7 @@ from codeatlas.domain.repository_models import (
     RepositoryLocation,
 )
 from codeatlas.domain.retrieval_models import RetrievalLimits
+from codeatlas.domain.vector_ports import EmbeddingPort, VectorIndexPort
 from codeatlas.infrastructure.conversation import SqliteConversationStore
 from codeatlas.infrastructure.indexing.migrations import current_revision
 from codeatlas.infrastructure.indexing.query import SqliteIndexQuery
@@ -90,6 +94,8 @@ class CodeAtlasRuntime:
     github_client: GitHubRestClient | None = None
     index_store: SqliteIndexStore | None = None
     webhook_sync: WebhookSyncService | None = None
+    embedding_provider: EmbeddingPort | None = None
+    vector_index: VectorIndexPort | None = None
     registered_repositories: tuple[RepositoryDescriptor, ...] = ()
     _started: bool = field(default=False, repr=False)
 
@@ -128,6 +134,16 @@ class CodeAtlasRuntime:
         github_client = (
             GitHubRestClient.from_settings(settings.github) if settings.github.enabled else None
         )
+        embedding_provider: EmbeddingPort | None = None
+        vector_index: VectorIndexPort | None = None
+        vector_search: VectorSearchService | None = None
+        if settings.embedding.enabled and settings.qdrant.enabled:
+            embedding_provider = build_embedding_provider(settings.embedding)
+            vector_index = build_vector_index(
+                settings.qdrant,
+                dimensions=embedding_provider.dimensions,
+            )
+            vector_search = VectorSearchService(embedding_provider, vector_index)
         index_store: SqliteIndexStore | None = None
         webhook_sync: WebhookSyncService | None = None
         if (
@@ -182,6 +198,7 @@ class CodeAtlasRuntime:
             index=index_query,
             github=github_client,
             default_github_repository=settings.github.default_repository,
+            vector=vector_search,
             limits=RetrievalLimits(
                 max_results=min(settings.repository.max_search_results, 100),
             ),
@@ -260,6 +277,8 @@ class CodeAtlasRuntime:
             github_client=github_client,
             index_store=index_store,
             webhook_sync=webhook_sync,
+            embedding_provider=embedding_provider,
+            vector_index=vector_index,
         )
 
     @property
@@ -305,6 +324,10 @@ class CodeAtlasRuntime:
             await self.webhook_store.close()
             if self.github_client is not None:
                 await self.github_client.aclose()
+            if self.vector_index is not None:
+                await self.vector_index.aclose()
+            if self.embedding_provider is not None:
+                await self.embedding_provider.aclose()
             self._started = False
             logger.info("runtime_stopped")
 

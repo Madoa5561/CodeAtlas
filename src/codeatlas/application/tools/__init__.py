@@ -22,6 +22,7 @@ from codeatlas.application.tools.schemas import ToolResult
 from codeatlas.domain.github_ports import GitHubReadOnlyPort
 from codeatlas.domain.repository_ports import RepositoryProviderPort, RepositoryRegistryPort
 from codeatlas.domain.retrieval_models import RetrievalLimits
+from codeatlas.domain.vector_ports import VectorQueryPort
 
 __all__ = [
     "TOOL_SPECS",
@@ -46,6 +47,7 @@ def build_tool_executor(
     tool_registry: ToolRegistry | None = None,
     github: GitHubReadOnlyPort | None = None,
     default_github_repository: str | None = None,
+    vector: VectorQueryPort | None = None,
 ) -> ToolExecutor:
     """Construct the validated tool executor used by the Retriever.
 
@@ -59,5 +61,6 @@ def build_tool_executor(
         limits=limits or RetrievalLimits(),
         github=github,
         default_github_repository=default_github_repository,
+        vector=vector,
     )
     return ToolExecutor(tool_registry or build_tool_registry(), services, policy)

@@ -102,6 +102,26 @@ CODEATLAS_GITHUB__WEBHOOK_SECRET=...
 - PR/Issueはexternal evidenceとしてcitationにGitHub URLを付ける。PRはhead SHA、Issueはactive index snapshot SHAを文脈SHAとする。
 - GitHub toolsはlocal repositoryのactive indexを要求する。
 
+## Embedding and Qdrant
+
+```text
+CODEATLAS_EMBEDDING__ENABLED=true
+CODEATLAS_EMBEDDING__PROVIDER=openai-compatible   # or local
+CODEATLAS_EMBEDDING__API_KEY=...
+CODEATLAS_EMBEDDING__API_URL=https://api.openai.com/v1
+CODEATLAS_EMBEDDING__MODEL=text-embedding-3-small
+CODEATLAS_EMBEDDING__DIMENSIONS=1536
+
+CODEATLAS_QDRANT__ENABLED=true
+CODEATLAS_QDRANT__URL=http://qdrant:6333
+CODEATLAS_QDRANT__COLLECTION=codeatlas_chunks
+```
+
+- `qdrant.enabled=true`には`embedding.enabled=true`が必要。
+- `provider=local`は決定的hashed embeddingで、意味品質は持たない（CI/デモ用）。
+- Vector projectionは自動更新ではない。index更新後に`codeatlas-admin vector rebuild <repository-path>`を実行する。
+- `vector status`はactive generationのpointsとfreshnessを返す。
+
 ## Web API and GitHub Webhook
 
 ```text

@@ -5,15 +5,19 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import time
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from codeatlas import API_VERSION
+from codeatlas.adapters.embedding import build_embedding_provider
 from codeatlas.adapters.parsing.tree_sitter_parser import TreeSitterTypeScriptParser
 from codeatlas.adapters.parsing.tree_sitter_plugin import TypeScriptJavaScriptParserPlugin
 from codeatlas.adapters.repository.plugin import LocalGitRepositoryPlugin
+from codeatlas.adapters.vector import build_vector_index
 from codeatlas.application.indexing import IndexingPolicy, TransactionalIndexingService
+from codeatlas.application.vector_projection import VectorProjector
 from codeatlas.config.settings import CodeAtlasSettings, load_settings
 from codeatlas.domain.indexing_models import IndexGenerationId, IndexingRequest
 from codeatlas.domain.repository_models import RepositoryId, RepositoryLocation
@@ -23,6 +27,7 @@ from codeatlas.infrastructure.indexing.migrations import (
     downgrade_database,
     upgrade_database,
 )
+from codeatlas.infrastructure.indexing.query import SqliteIndexQuery
 from codeatlas.infrastructure.indexing.store import SqliteIndexStore
 from codeatlas.plugin_api.registry import PluginRegistry
 
@@ -57,6 +62,11 @@ def _parser() -> argparse.ArgumentParser:
     conversation_commands = conversations.add_subparsers(dest="conversation_command", required=True)
     purge = conversation_commands.add_parser("purge")
     purge.add_argument("--days", type=int, default=None)
+    vector = subcommands.add_parser("vector")
+    vector_commands = vector.add_subparsers(dest="vector_command", required=True)
+    for name in ("rebuild", "status"):
+        command = vector_commands.add_parser(name)
+        command.add_argument("repository", type=Path)
     return parser
 
 
@@ -147,6 +157,45 @@ async def _run_conversations(args: argparse.Namespace, settings: CodeAtlasSettin
         await store.close()
 
 
+async def _run_vector(args: argparse.Namespace, settings: CodeAtlasSettings) -> object:
+    if not settings.embedding.enabled or not settings.qdrant.enabled:
+        raise ValueError("embedding and qdrant must both be enabled")
+    if current_revision(settings.database.url) is None:
+        raise ValueError("the index schema is not initialized")
+    repository_plugin = LocalGitRepositoryPlugin.from_settings(settings.repository)
+    descriptor = await repository_plugin.provider.register_local_repository(
+        RepositoryLocation(args.repository)
+    )
+    query = SqliteIndexQuery(settings.database.url)
+    embedding = build_embedding_provider(settings.embedding)
+    index = build_vector_index(settings.qdrant, dimensions=embedding.dimensions)
+    try:
+        if args.vector_command == "rebuild":
+            projector = VectorProjector(query, embedding, index)
+            stats = await projector.rebuild(descriptor.repository_id)
+            return asdict(stats)
+        snapshot = await query.get_active_snapshot(descriptor.repository_id)
+        if snapshot is None:
+            return {"fresh": False, "points": 0, "generation_id": None}
+        started = time.monotonic()
+        points = await index.count(
+            repository_id=descriptor.repository_id,
+            generation_id=snapshot.generation_id,
+        )
+        latency_ms = (time.monotonic() - started) * 1_000
+        return {
+            "fresh": points > 0,
+            "points": points,
+            "generation_id": snapshot.generation_id,
+            "commit_sha": snapshot.commit_sha,
+            "count_latency_ms": round(latency_ms, 3),
+        }
+    finally:
+        await index.aclose()
+        await embedding.aclose()
+        await query.aclose()
+
+
 def _json_default(value: object) -> object:
     if hasattr(value, "value"):
         return value.value
@@ -172,11 +221,12 @@ def main() -> None:
         else:
             result = {"revision": current_revision(settings.database.url)}
     else:
-        result = asyncio.run(
-            _run_conversations(args, settings)
-            if args.command == "conversations"
-            else _run_index(args, settings)
-        )
+        if args.command == "conversations":
+            result = asyncio.run(_run_conversations(args, settings))
+        elif args.command == "vector":
+            result = asyncio.run(_run_vector(args, settings))
+        else:
+            result = asyncio.run(_run_index(args, settings))
     if args.json_output:
         print(json.dumps(result, default=_json_default, sort_keys=True))
     else:

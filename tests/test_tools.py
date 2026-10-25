@@ -85,6 +85,7 @@ EXPECTED_TOOL_NAMES = {
     "read_file",
     "search_code",
     "search_lexical",
+    "search_vector",
     "search_commits",
     "search_text",
     "traverse_graph",
@@ -249,6 +250,7 @@ async def test_catalog_definitions_match_strict_schemas(tool_stack: ToolStack) -
     assert schemas["search_text"]["required"] == ["query"]
     assert schemas["search_code"]["required"] == ["query"]
     assert schemas["search_lexical"]["required"] == ["query"]
+    assert schemas["search_vector"]["required"] == ["query"]
     assert schemas["traverse_graph"]["required"] == ["start"]
     assert schemas["get_pull_request"]["required"] == ["number"]
     assert schemas["get_pull_request_diff"]["required"] == ["number"]

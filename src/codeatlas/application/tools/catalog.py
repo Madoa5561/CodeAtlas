@@ -44,6 +44,7 @@ from codeatlas.application.tools.schemas import (
     SearchCommitsInput,
     SearchLexicalInput,
     SearchTextInput,
+    SearchVectorInput,
     ToolResult,
     TraverseGraphInput,
 )
@@ -154,6 +155,13 @@ TOOL_SPECS: tuple[ToolSpec[Any], ...] = (
         + _REPOSITORY_ARG,
         SearchLexicalInput,
         index_tools.search_lexical,
+    ),
+    ToolSpec(
+        "search_vector",
+        "Cosine vector search over the active Qdrant projection of safe code chunks. "
+        "Requires the optional embedding and Qdrant configuration. " + _REPOSITORY_ARG,
+        SearchVectorInput,
+        index_tools.search_vector,
     ),
     ToolSpec(
         "find_symbol",

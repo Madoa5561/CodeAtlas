@@ -148,6 +148,13 @@ class SearchLexicalInput(RepositoryScopedInput):
     limit: int = Field(default=20, ge=1, le=100)
 
 
+class SearchVectorInput(RepositoryScopedInput):
+    """Vector similarity search over the active Qdrant projection."""
+
+    query: str = Field(min_length=1, max_length=2_000)
+    limit: int = Field(default=10, ge=1, le=50)
+
+
 class FindSymbolInput(RepositoryScopedInput):
     """Find declarations by exact name or qualified-name suffix."""
 
