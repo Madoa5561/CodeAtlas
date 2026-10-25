@@ -48,6 +48,7 @@ Tool は repository の working tree を読まない。revision 未指定時は 
 ## Agent からの利用
 
 - Planner は catalog に存在する Tool だけを計画に含める。
+- Planner は識別子・引用句・path・履歴/commit/diff などの intent に加え、日本語/英語の技術用語（認証→auth/login、設定→config など）を決定的な識別子へ展開する。翻訳サービスではなく、小さな固定辞書である。
 - Retriever は ToolExecutor 経由で実行し、`EvidenceCandidate` へ正規化する。
 - Reasoner は Tool を直接実行しない。追加調査は `RetrievalGap` として Orchestrator に返し、bounded replan を行う。
 - 失敗した Tool は回答全体を失敗させず、warning として記録し、回答に「調査できなかった内容」を明示する。

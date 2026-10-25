@@ -50,7 +50,7 @@ docker compose logs -f codeatlas
 release image を使う場合は build を省略できる。versionを固定するため`CODEATLAS_IMAGE_TAG`へ明示tagを設定する。
 
 ```powershell
-$env:CODEATLAS_IMAGE_TAG="v0.1.1"
+$env:CODEATLAS_IMAGE_TAG="v0.1.2"
 docker compose pull
 docker compose up -d codeatlas
 ```

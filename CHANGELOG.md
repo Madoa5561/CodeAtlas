@@ -9,6 +9,17 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.1.2] - 2026-10-25
+
+### Added
+
+- Plannerに日本語・英語の技術用語辞書（認証、設定、依存、ログイン、エラー等）を追加し、識別子のない日本語質問でも`auth`や`config`などソース上の識別子へ決定的に展開するようにした
+- 用語展開のunit testとplanner testを追加
+
+### Fixed
+
+- 日本語の自然文質問が原文のliteral検索だけになり「根拠が見つからない」と回答していた問題を改善した
+
 ## [0.1.1] - 2026-10-25
 
 ### Fixed

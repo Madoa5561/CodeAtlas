@@ -3,7 +3,7 @@
 CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き回答をDiscord Forumなどへ返すOSSのCode Intelligence Platformです。
 
 > [!IMPORTANT]
-> 現在は **0.1.1** として、M4「Agent + Ollama」とM5「Discord Forum MVP」まで実装済みです。Qdrant、Hybrid Retrieval、Thrift parser、GitHub App/Webhook、Web API、MCPは未実装です。未実装機能を実装済みとしては扱いません。
+> 現在は **0.1.2** として、M4「Agent + Ollama」とM5「Discord Forum MVP」まで実装済みです。Qdrant、Hybrid Retrieval、Thrift parser、GitHub App/Webhook、Web API、MCPは未実装です。未実装機能を実装済みとしては扱いません。
 
 ## Status
 

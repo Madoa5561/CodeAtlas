@@ -227,6 +227,41 @@ _REPOSITORY_KEYWORDS = (
 
 _ASCII_KEYWORD = re.compile(r"^[a-z0-9 ]+$")
 
+# Common Japanese/English product terms mapped to the identifiers used in source code.
+# The expansion is intentionally small and deterministic; it is not a translation service.
+_DOMAIN_SYNONYMS: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
+    (("認証", "authentication", "authorization", "ログイン", "login"), ("auth", "login")),
+    (("設定", "configuration", "settings"), ("config", "settings")),
+    (("依存", "dependency", "dependencies"), ("import", "dependency")),
+    (("初期化", "initialization", "initialize"), ("init", "initialize")),
+    (("リクエスト", "request", "http"), ("request", "http")),
+    (("エラー", "error", "exception"), ("error", "exception")),
+    (("テスト", "test", "spec"), ("test", "spec")),
+    (("型定義", "型", "type", "interface"), ("type", "interface")),
+    (("イベント", "event"), ("event", "events")),
+    (("メッセージ", "message"), ("message", "messages")),
+    (("暗号", "encrypt", "crypto"), ("crypto", "encrypt")),
+    (("接続", "connection", "connect"), ("connection", "connect")),
+    (("コールバック", "callback"), ("callback",)),
+    (("スレッド", "thread"), ("thread",)),
+    (("タイムアウト", "timeout"), ("timeout",)),
+    (("再試行", "retry"), ("retry",)),
+    (("ログ出力", "ログファイル", "logging"), ("log", "logger")),
+    (("キャッシュ", "cache"), ("cache",)),
+    (("キュー", "queue"), ("queue",)),
+    (("ファイル", "file"), ("file",)),
+)
+
+
+def expand_domain_terms(query: str) -> tuple[str, ...]:
+    """Map well-known Japanese/English domain terms to likely source identifiers."""
+    folded = query.casefold()
+    terms: list[str] = []
+    for triggers, expansions in _DOMAIN_SYNONYMS:
+        if any(_contains_keyword(folded, trigger.casefold()) for trigger in triggers):
+            terms.extend(expansions)
+    return _dedupe(terms)
+
 
 def is_japanese(locale: str) -> bool:
     """Return whether a locale selects Japanese presentation."""
@@ -420,11 +455,12 @@ def analyze(query: str) -> QuerySignals:
     folded = query.casefold()
     files, globs, directories = extract_paths(query)
     path_tokens = tuple(part.casefold() for part in (*files, *globs, *directories))
+    domain_terms = expand_domain_terms(query)
     identifiers = tuple(
         identifier
-        for identifier in extract_identifiers(query)
+        for identifier in _dedupe([*domain_terms, *extract_identifiers(query)])
         if not any(identifier.casefold() in token for token in path_tokens)
-    )
+    )[:12]
     quoted = extract_quoted_phrases(query)
     return QuerySignals(
         query=query,
@@ -433,7 +469,7 @@ def analyze(query: str) -> QuerySignals:
         files=files,
         globs=globs,
         directories=directories,
-        terms=extract_terms(query),
+        terms=_dedupe([*extract_terms(query), *domain_terms]),
         commit_sha=extract_sha(query),
         wants_history=_matches_any(folded, _HISTORY_KEYWORDS),
         wants_diff=_matches_any(folded, _DIFF_KEYWORDS),
