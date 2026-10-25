@@ -21,6 +21,7 @@ from codeatlas.adapters.github import GitHubRestClient
 from codeatlas.adapters.http.api import ApiServices, create_api_app
 from codeatlas.adapters.http.plugin import ApiServerPlugin
 from codeatlas.adapters.model import DeepSeekModelPlugin, OllamaModelPlugin
+from codeatlas.adapters.parsing.thrift_parser import ThriftParser
 from codeatlas.adapters.parsing.tree_sitter_parser import TreeSitterTypeScriptParser
 from codeatlas.adapters.repository.plugin import LocalGitRepositoryPlugin
 from codeatlas.adapters.vector import build_vector_index
@@ -157,6 +158,10 @@ class CodeAtlasRuntime:
                 max_nodes=settings.indexing.max_parser_nodes,
                 max_depth=settings.indexing.max_parser_depth,
             )
+            thrift_parser = ThriftParser(
+                max_source_bytes=settings.indexing.max_file_bytes,
+                max_depth=settings.indexing.max_parser_depth,
+            )
             index_store = SqliteIndexStore(
                 settings.database.url,
                 busy_timeout_seconds=settings.database.busy_timeout_seconds,
@@ -164,7 +169,7 @@ class CodeAtlasRuntime:
             indexing = TransactionalIndexingService(
                 repository_plugin.provider,
                 index_store,
-                (parser,),
+                (parser, thrift_parser),
                 IndexingPolicy(
                     max_repository_files=settings.indexing.max_repository_files,
                     max_concurrency=settings.indexing.max_concurrency,

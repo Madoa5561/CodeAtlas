@@ -410,6 +410,7 @@ class TransactionalIndexingService:
             ".jsx": "jsx",
             ".mjs": "javascript",
             ".cjs": "javascript",
+            ".thrift": "thrift",
         }.get(path.value.suffix.casefold())
 
     async def get_active_generation(self, repository_id: RepositoryId) -> RepositorySnapshot | None:

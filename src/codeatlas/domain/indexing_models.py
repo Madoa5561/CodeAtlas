@@ -205,7 +205,7 @@ class SymbolId:
 
 
 class SymbolKind(StrEnum):
-    """M3 TypeScript and JavaScript declaration kinds."""
+    """Declaration kinds emitted by built-in parsers."""
 
     CLASS = "class"
     INTERFACE = "interface"
@@ -217,6 +217,13 @@ class SymbolKind(StrEnum):
     VARIABLE = "variable"
     NAMESPACE = "namespace"
     ANONYMOUS_FUNCTION = "anonymous_function"
+    SERVICE = "service"
+    STRUCT = "struct"
+    UNION = "union"
+    EXCEPTION = "exception"
+    FIELD = "field"
+    TYPEDEF = "typedef"
+    CONST = "const"
 
 
 @dataclass(frozen=True, slots=True)

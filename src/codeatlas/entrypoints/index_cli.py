@@ -12,6 +12,8 @@ from pathlib import Path
 
 from codeatlas import API_VERSION
 from codeatlas.adapters.embedding import build_embedding_provider
+from codeatlas.adapters.parsing.thrift_parser import ThriftParser
+from codeatlas.adapters.parsing.thrift_plugin import ThriftParserPlugin
 from codeatlas.adapters.parsing.tree_sitter_parser import TreeSitterTypeScriptParser
 from codeatlas.adapters.parsing.tree_sitter_plugin import TypeScriptJavaScriptParserPlugin
 from codeatlas.adapters.repository.plugin import LocalGitRepositoryPlugin
@@ -79,12 +81,19 @@ def _service(settings: CodeAtlasSettings) -> TransactionalIndexingService:
             max_depth=settings.indexing.max_parser_depth,
         )
     )
+    thrift_plugin = ThriftParserPlugin(
+        parser=ThriftParser(
+            max_source_bytes=settings.indexing.max_file_bytes,
+            max_depth=settings.indexing.max_parser_depth,
+        )
+    )
     registry = PluginRegistry(
         api_version=API_VERSION,
         allowlist=settings.security.plugin_allowlist,
     )
     registry.register(repository_plugin)
     registry.register(parser_plugin)
+    registry.register(thrift_plugin)
     policy = IndexingPolicy(
         max_repository_files=settings.indexing.max_repository_files,
         max_concurrency=settings.indexing.max_concurrency,
@@ -101,7 +110,7 @@ def _service(settings: CodeAtlasSettings) -> TransactionalIndexingService:
             settings.database.url,
             busy_timeout_seconds=settings.database.busy_timeout_seconds,
         ),
-        (parser_plugin.parser,),
+        (parser_plugin.parser, thrift_plugin.parser),
         policy,
     )
 

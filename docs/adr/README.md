@@ -31,3 +31,4 @@
 | [0027](0027-github-external-evidence.md) | Accepted | GitHub外部evidenceとCitation |
 | [0028](0028-webhook-driven-incremental-index.md) | Accepted | GitHub Push WebhookによるIncremental Index更新 |
 | [0029](0029-qdrant-vector-projection.md) | Accepted | Qdrant Vector ProjectionとEmbedding Provider |
+| [0030](0030-thrift-parser-and-cross-language-links.md) | Accepted | Thrift ParserとCross-Language Relation候補 |

@@ -9,6 +9,28 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.4.0] - 2026-10-25
+
+### Added
+
+- M7 Thrift専用recursive-descent parser
+  - namespace、include、typedef、const、enum、struct、union、exception、service、extends、method、arguments、throws、field ID、required/optional
+  - Thrift symbolsを既存index/graphへ統合（SymbolKind extension）
+- Thrift→TypeScriptのcross-language relation候補
+  - `{Service}Client` generated-client heuristic
+  - field/method型参照、extends、include
+- Thrift parser pluginとindexing/runtimeへの登録
+- ADR-0030
+
+### Changed
+
+- Tool schemaのSymbolKindがThrift kindsへ拡張
+- `.thrift`を`language=thrift`としてindex
+
+### Notes
+
+cross-language linkはheuristicであり、確定resolverではない。generated fileの実装パターンに依存する。
+
 ## [0.3.0] - 2026-10-25
 
 ### Added

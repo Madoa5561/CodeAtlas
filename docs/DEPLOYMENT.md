@@ -7,7 +7,7 @@
 - GitHub App / Webhook / PR / Issue Tool
 - Qdrant / Vector Search / Hybrid Retrieval
 - Web API / 管理画面 / MCP / VS Code 拡張
-- Thrift parser / 確定 Call Graph
+- 確定 Call Graph（Thrift parserとcross-language relation候補は実装済み）
 
 単一の `codeatlas` container と host 上の Ollama で構成する。SQLite が source of truth である。
 

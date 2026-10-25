@@ -2,7 +2,7 @@
 
 ## Scope
 
-M3 indexes a registered local repository at one resolved commit SHA into SQLite. It stores safe text, file versions, TypeScript/JavaScript symbols, imports, exports, call candidates, extends, and implements candidates. Qdrant, semantic resolution, Call Graph finalization, Thrift, LLMs, and remote repository synchronization are not implemented.
+M3 indexes a registered local repository at one resolved commit SHA into SQLite. It stores safe text, file versions, TypeScript/JavaScript and Thrift symbols, imports, exports, call candidates, extends, and implements candidates. Semantic resolution, Call Graph finalization, and remote repository synchronization are not implemented.
 
 ## Generation Lifecycle
 
@@ -59,3 +59,14 @@ codeatlas-admin vector status <repository-path>
 - point payloads carry repository, generation, commit, path, and line range
 - Qdrant filters enforce repository and generation, so stale generations cannot leak into answers
 - `vector status` reports points and count latency; `fresh` means the active generation has points
+
+## Thrift (M7)
+
+`.thrift` files are parsed by a bounded recursive-descent adapter, not Tree-sitter. It extracts namespace, include, typedef, const, enum, struct, union, exception, service, extends, method, arguments, throws, field IDs, and required/optional markers. Thrift symbols use the shared symbol table and graph relations:
+
+- include → `ImportRelation`
+- service extends → `ReferenceRelation(kind=extends)`
+- field/method type names → `ReferenceRelation(kind=reference)`
+- service → `{Service}Client` → low-confidence generated-client heuristic
+
+Cross-language edges are name-based candidates, not a resolved call graph. Confidence and resolver metadata are preserved in the relation rows.

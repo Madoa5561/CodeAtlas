@@ -26,6 +26,13 @@ SymbolKindName = Literal[
     "variable",
     "namespace",
     "anonymous_function",
+    "service",
+    "struct",
+    "union",
+    "exception",
+    "field",
+    "typedef",
+    "const",
 ]
 
 RelationKindName = Literal["import", "export", "call", "extends", "implements", "reference"]
