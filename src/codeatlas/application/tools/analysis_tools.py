@@ -305,7 +305,7 @@ async def generate_mermaid(
         if not isinstance(node, dict) or node.get("ref") not in ids:
             continue
         label = str(node.get("label", node.get("ref", ""))).replace('"', "'").replace("\n", " ")
-        label = label.replace("[", "(").replace("]", ")")
+        label = label.replace("[", "(").replace("]", ")").replace("<", "(").replace(">", ")")
         lines.append(f'  {ids[node["ref"]]}["{label[:120]}"]')
     for edge in edges:
         if not isinstance(edge, dict):
