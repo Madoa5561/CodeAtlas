@@ -76,12 +76,11 @@ FTS、Thrift、確定Call/Dependency Graph、Qdrant projectionはM3完了範囲�
 ## M7: 拡張
 
 - [x] Thrift parserとThrift→TS cross-language relation候補（v0.4.0）
-- [ ] 確定Call/Dependency Graph resolver
 - [x] 複数Model Provider（OpenAI/Anthropic/Gemini）（v0.5.0）
 - [x] Safe HTTP Tool（SSRF対策）（v0.6.0）
 - [x] 要約、影響分析、PR review、Mermaid（v0.7.0）
+- [x] CLI、Web API、MCP（v0.8.0）
 - [ ] 確定Call/Dependency Graph resolver
-- [ ] CLI、Web API、MCP
 
 ## リリースゲート
 

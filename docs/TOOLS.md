@@ -32,6 +32,14 @@ Tool は repository の working tree を読まない。revision 未指定時は 
 | `analyze_impact` | `repository`, `start`, `start_type`, `max_depth` | 逆方向relationのimpacted files/symbols |
 | `generate_mermaid` | `repository`, `start`, `edge_kinds`, `direction` | bounded graphのMermaid flowchart |
 | `review_pull_request` | `repository_id`, `repository`, `number` | GitHub PR + changed/impacted files |
+
+## MCP / Web API
+
+同じread-only Tool catalogをMCP stdioとWeb APIから利用できる。
+
+- MCP: `codeatlas-mcp`（`initialize` / `tools/list` / `tools/call`）
+- Web API: `GET /tools`、`POST /tools/call`
+- どちらも既存のvalidation、repository scope、timeout、payload上限、safe errorを共有する。
 | `traverse_graph` | `repository`, `start`, `edge_kinds`, `direction`, `max_depth` | call/dependency/reference のbounded BFS |
 | `get_pull_request` | `repository_id`, `repository`(owner/name), `number` | GitHub PR本文・state・head/base SHA |
 | `get_pull_request_diff` | `repository_id`, `repository`, `number` | GitHub PRのbounded unified diff |

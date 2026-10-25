@@ -9,6 +9,25 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.8.0] - 2026-10-25
+
+### Added
+
+- MCP stdio server `codeatlas-mcp`
+  - JSON-RPC initialize / ping / tools/list / tools/call
+  - read-only tool catalogとevidence/payloadのstructuredContent
+  - JSON-RPC error / notification handling
+- Web API tools endpoints
+  - `GET /tools`
+  - `POST /tools/call`（repository scope、evidence、safe error）
+- MCP/API handler tests
+- ADR-0034
+
+### Changed
+
+- `ApiServices`がtool executorを受け取り、Web APIからToolを直接実行可能
+- CLI/MCP/APIが同じToolExecutorとread-only catalogを共有
+
 ## [0.7.0] - 2026-10-25
 
 ### Added

@@ -292,6 +292,7 @@ class CodeAtlasRuntime:
                     allow_ask=settings.api.allow_ask,
                     max_body_bytes=settings.api.max_body_bytes,
                     webhook_sync=webhook_sync,
+                    tools=tool_executor,
                 )
             )
             api_plugin = ApiServerPlugin.from_settings(api_app, settings.api)

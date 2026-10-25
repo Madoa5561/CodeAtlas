@@ -133,6 +133,16 @@ codeatlas-admin --json index incremental /repositories/linejs HEAD
 
 APIを公開ネットワークへbindする場合はreverse proxyで認証・TLSを終端し、`/ask`の公開には注意する。host port 8080が使用中の場合はcompose overrideで`ports: !override`を指定して別portへ変更できる。
 
+## MCP Server
+
+MCPクライアントから同じTool catalogを使う場合、ローカルに`codeatlas-mcp`を配置するか、container経由でstdioを接続する。
+
+```powershell
+docker compose exec -T codeatlas codeatlas-mcp
+```
+
+container execはMCPクライアント設定でwrapper scriptにする必要がある。APIを公開する場合の認証境界はMCPにも同様に適用される。
+
 ## Vector Search (optional)
 
 Qdrantを使う場合はprofileを起動し、embeddingとQdrantを有効化する。

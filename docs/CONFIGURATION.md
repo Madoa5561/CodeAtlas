@@ -161,6 +161,17 @@ CODEATLAS_QDRANT__COLLECTION=codeatlas_chunks
 - Vector projectionは自動更新ではない。index更新後に`codeatlas-admin vector rebuild <repository-path>`を実行する。
 - `vector status`はactive generationのpointsとfreshnessを返す。
 
+## MCP Server
+
+`codeatlas-mcp`はstdioでMCP JSON-RPCを提供する。設定は通常の`CODEATLAS_*`を共有し、Discord/APIは起動しない。
+
+```text
+# MCP client config example (local process)
+command = "codeatlas-mcp"
+```
+
+containerで使う場合は`docker compose exec -T codeatlas codeatlas-mcp`をラップする。stdoutはJSON-RPC専用で、ログはstderrへ出る。
+
 ## Web API and GitHub Webhook
 
 ```text

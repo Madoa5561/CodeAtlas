@@ -14,6 +14,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from codeatlas.domain.agent_models import CanonicalToolCall, ToolContext
 from codeatlas.domain.conversation_models import ConversationId
 from codeatlas.domain.errors import CodeAtlasError
 from codeatlas.domain.interaction_models import (
@@ -42,6 +43,20 @@ class AskRequest(BaseModel):
         max_length=64,
     )
     locale: str = Field(default="ja", min_length=1, max_length=16)
+
+
+class ToolCallRequest(BaseModel):
+    """Validated tool invocation accepted by the local API."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    name: str = Field(min_length=1, max_length=64, pattern=r"^[a-z][a-z0-9_]{0,63}$")
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    repository_id: str | None = Field(
+        default=None,
+        pattern=r"^repo_[0-9a-f]{32}$",
+        max_length=64,
+    )
 
 
 class WebhookStorePort(Protocol):
@@ -81,6 +96,7 @@ class ApiServices:
     allow_ask: bool
     max_body_bytes: int
     webhook_sync: WebhookSyncPort | None = None
+    tools: Any | None = None
 
 
 def verify_github_signature(body: bytes, header: str | None, secret: str) -> bool:
@@ -155,6 +171,96 @@ def create_api_app(services: ApiServices) -> FastAPI:
     @app.get("/repositories")
     async def repositories() -> list[dict[str, object]]:
         return [_descriptor_payload(item) for item in services.registry.list_all()]
+
+    @app.get("/tools")
+    async def tools() -> JSONResponse:
+        if services.tools is None:
+            return JSONResponse(
+                status_code=503,
+                content={"code": "tools_disabled", "message": "The tool API is disabled."},
+            )
+        definitions = []
+        for definition in services.tools.catalog():
+            try:
+                schema: Any = json.loads(definition.input_schema_json)
+            except ValueError:
+                schema = {"type": "object"}
+            definitions.append(
+                {
+                    "name": definition.name,
+                    "description": definition.description,
+                    "input_schema": schema,
+                    "version": definition.version,
+                }
+            )
+        return JSONResponse(status_code=200, content={"tools": definitions})
+
+    @app.post("/tools/call")
+    async def call_tool(request: ToolCallRequest) -> JSONResponse:
+        if services.tools is None:
+            return JSONResponse(
+                status_code=503,
+                content={"code": "tools_disabled", "message": "The tool API is disabled."},
+            )
+        scope: tuple[RepositoryId, ...] = ()
+        if request.repository_id is not None:
+            repository_id = RepositoryId(request.repository_id)
+            registered = {item.repository_id for item in services.registry.list_all()}
+            if repository_id not in registered:
+                return JSONResponse(
+                    status_code=404,
+                    content={"code": "not_found", "message": "The repository is not registered."},
+                )
+            scope = (repository_id,)
+        token = secrets.token_hex(8)
+        try:
+            call = CanonicalToolCall(
+                call_id=f"api_tool_{token}",
+                tool_name=request.name,
+                arguments_json=json.dumps(request.arguments, ensure_ascii=False),
+            )
+        except ValueError:
+            return JSONResponse(
+                status_code=400,
+                content={"code": "invalid_arguments", "message": "The tool arguments are invalid."},
+            )
+        outcome = await services.tools.execute(
+            call,
+            ToolContext(
+                request_id=f"api_request_{token}",
+                allowed_repository_ids=scope,
+            ),
+        )
+        try:
+            payload: Any = json.loads(outcome.payload_json)
+        except ValueError:
+            payload = {}
+        return JSONResponse(
+            status_code=200,
+            content={
+                "ok": outcome.ok,
+                "payload": payload if isinstance(payload, dict) else {},
+                "evidence": [
+                    {
+                        "evidence_id": item.evidence_id,
+                        "kind": item.kind.value,
+                        "repository_id": item.repository_id.value,
+                        "commit_sha": item.commit_sha,
+                        "path": item.path.as_posix(),
+                        "start_line": item.start_line,
+                        "end_line": item.end_line,
+                        "retrieval_method": item.retrieval_method,
+                        "external_url": item.external_url,
+                    }
+                    for item in outcome.evidence
+                ],
+                "error_category": (
+                    outcome.error_category.value if outcome.error_category is not None else None
+                ),
+                "safe_message": outcome.safe_message,
+                "truncated": outcome.truncated,
+            },
+        )
 
     @app.post("/ask")
     async def ask(request: AskRequest) -> JSONResponse:

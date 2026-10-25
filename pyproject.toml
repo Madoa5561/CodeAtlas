@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codeatlas"
-version = "0.7.0"
+version = "0.8.0"
 description = "Evidence-based code intelligence for GitHub repositories"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -46,6 +46,7 @@ codeatlas = "codeatlas.entrypoints.service:main"
 codeatlas-healthcheck = "codeatlas.entrypoints.healthcheck:main"
 codeatlas-admin = "codeatlas.entrypoints.index_cli:main"
 codeatlas-ask = "codeatlas.entrypoints.cli:main"
+codeatlas-mcp = "codeatlas.entrypoints.mcp:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
