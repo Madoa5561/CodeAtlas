@@ -268,6 +268,7 @@ _GITHUB_NUMBER = re.compile(
     r"(?:#|(?:pr|pull\s+request|issue|プルリク(?:エスト)?|イシュー)\s*#?)(\d{1,7})",
     re.IGNORECASE,
 )
+_URL_PATTERN = re.compile(r"https?://[^\s<>\"'\)\]]+", re.IGNORECASE)
 
 _ASCII_KEYWORD = re.compile(r"^[a-z0-9 ]+$")
 
@@ -456,6 +457,7 @@ class QuerySignals:
     wants_pull_request: bool
     wants_issue: bool
     github_number: int | None
+    urls: tuple[str, ...]
 
     @property
     def search_phrase(self) -> str:
@@ -500,6 +502,7 @@ class QuerySignals:
                 self.wants_pull_request,
                 self.wants_issue,
                 self.github_number,
+                self.urls,
             )
         )
 
@@ -541,6 +544,7 @@ def analyze(query: str) -> QuerySignals:
         wants_pull_request=_matches_any(folded, _PULL_REQUEST_KEYWORDS),
         wants_issue=_matches_any(folded, _ISSUE_KEYWORDS),
         github_number=(int(number.group(1)) if (number := _GITHUB_NUMBER.search(query)) else None),
+        urls=tuple(dict.fromkeys(match.group(0) for match in _URL_PATTERN.finditer(query)))[:3],
     )
 
 

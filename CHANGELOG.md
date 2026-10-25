@@ -9,6 +9,22 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.6.0] - 2026-10-25
+
+### Added
+
+- M7 Safe HTTP Tool `fetch_http`（GET/HEADのみ）
+- SSRF対策: localhost/private/link-local/metadata/loopback/IP literal/port制限、DNS解決後の全IP検証、redirect再検証
+- 許可ドメインallowlist、redirect上限、timeout、response size、Content-Type allowlist
+- robots.txt尊重、HTML本文抽出、HEAD metadata
+- `CODEATLAS_SECURITY__HTTP__*` 設定、ADR-0032
+- PlannerのURL intent
+
+### Changed
+
+- Tool catalogが29 toolsへ拡張
+- 外部HTTP本文は`http_fetch` evidenceとexternal URL citationとして回答へ接続
+
 ## [0.5.0] - 2026-10-25
 
 ### Added

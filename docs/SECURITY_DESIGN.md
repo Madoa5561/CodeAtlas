@@ -68,4 +68,4 @@ M3ではsafe textだけをgeneration-scoped SQLite rowへ保存し、unsafe cont
 
 ## Deferred Controls
 
-SSRF（HTTP Tool）、GitHub webhook署名、GitHub App権限、transactional outbox、Qdrant projection整合性、Thrift cross-language linkはM6で該当機能と同時に実装・testする。mockだけを置いて実装済みとは扱わない。
+SSRF（HTTP Tool）はGET/HEAD限定、allowlist、DNS/IP検証、redirect再検証、Content-Type/size制限、robots.txtで実装・test済み（ADR-0032）。GitHub webhook署名、GitHub App権限、transactional outbox、Qdrant projection整合性、Thrift cross-language linkも該当機能と同時に実装・testする。mockだけを置いて実装済みとは扱わない。

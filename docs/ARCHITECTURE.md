@@ -116,4 +116,4 @@ SQLiteをsource of truth、Qdrant等を再構築可能なprojectionとする。e
 | Conversation Memory | SQLite messages/idempotency/locks | `infrastructure/conversation/` |
 | Composition Root | adapter配線とlifecycle | `runtime.py` |
 
-未実装: MCP、VS Code、GitHub App、event outbox、確定Call/Dependency Graph resolver、複数Model Provider、Safe HTTP Tool。Composition root以外は具象adapterをimportしない。
+未実装: MCP、VS Code、GitHub App、event outbox、確定Call/Dependency Graph resolver、要約・影響分析・PR review・Mermaid生成。Composition root以外は具象adapterをimportしない。

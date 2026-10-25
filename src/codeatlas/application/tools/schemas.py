@@ -162,6 +162,17 @@ class SearchVectorInput(RepositoryScopedInput):
     limit: int = Field(default=10, ge=1, le=50)
 
 
+class FetchHttpInput(RepositoryScopedInput):
+    """Fetch one allowlisted public HTTP document."""
+
+    url: str = Field(
+        min_length=8,
+        max_length=2_048,
+        pattern=r"^https?://[^\s]+$",
+    )
+    method: Literal["GET", "HEAD"] = "GET"
+
+
 class FindSymbolInput(RepositoryScopedInput):
     """Find declarations by exact name or qualified-name suffix."""
 

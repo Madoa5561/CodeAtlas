@@ -14,11 +14,13 @@ from codeatlas.application.tools import (
     github_tools,
     index_tools,
     repository_tools,
+    web_tools,
 )
 from codeatlas.application.tools.registry import RegisteredTool, ToolRegistry
 from codeatlas.application.tools.resolver import ToolServices
 from codeatlas.application.tools.schemas import (
     CompareRefsInput,
+    FetchHttpInput,
     FindCalleesInput,
     FindCallersInput,
     FindDefinitionInput,
@@ -162,6 +164,14 @@ TOOL_SPECS: tuple[ToolSpec[Any], ...] = (
         "Requires the optional embedding and Qdrant configuration. " + _REPOSITORY_ARG,
         SearchVectorInput,
         index_tools.search_vector,
+    ),
+    ToolSpec(
+        "fetch_http",
+        "Fetch bounded text from an allowlisted public HTTP(S) URL. Enforces SSRF controls, "
+        "redirect validation, content-type allowlist, robots.txt, and size limits. "
+        + _REPOSITORY_ARG,
+        FetchHttpInput,
+        web_tools.fetch_http,
     ),
     ToolSpec(
         "find_symbol",

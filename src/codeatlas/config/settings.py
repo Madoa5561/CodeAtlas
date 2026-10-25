@@ -294,16 +294,38 @@ class EmbeddingSettings(BaseModel):
         return self
 
 
+class HttpToolSettings(BaseModel):
+    """Safe outbound HTTP fetch settings."""
+
+    enabled: bool = False
+    allowed_domains: tuple[str, ...] = ()
+    timeout_seconds: float = Field(default=10.0, ge=1.0, le=60.0)
+    max_response_bytes: int = Field(default=500_000, ge=1_024, le=4_000_000)
+    max_redirects: int = Field(default=3, ge=0, le=5)
+    respect_robots_txt: bool = True
+
+    @model_validator(mode="after")
+    def require_allowlist_when_enabled(self) -> HttpToolSettings:
+        """An enabled HTTP tool must have at least one allowed domain."""
+        if self.enabled and not self.allowed_domains:
+            raise ValueError("security.http.allowed_domains is required when HTTP is enabled")
+        for domain in self.allowed_domains:
+            if not domain.strip() or "/" in domain or ":" in domain or " " in domain:
+                raise ValueError("invalid allowed HTTP domain")
+        return self
+
+
 class SecuritySettings(BaseModel):
-    """Security defaults applied by future adapters."""
+    """Security defaults applied by adapters."""
 
     plugin_allowlist: tuple[str, ...] | None = None
     allow_repository_writes: bool = False
     max_http_response_bytes: int = Field(default=2_000_000, ge=1_024, le=20_000_000)
+    http: HttpToolSettings = Field(default_factory=HttpToolSettings)
 
     @model_validator(mode="after")
     def prohibit_writes(self) -> SecuritySettings:
-        """Keep M1 and the planned MVP read-only."""
+        """Keep the MVP read-only."""
         if self.allow_repository_writes:
             raise ValueError("repository writes are not supported")
         return self

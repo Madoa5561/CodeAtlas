@@ -106,3 +106,15 @@ async def test_planner_pull_request_intent_uses_github_tools() -> None:
     assert "get_pull_request_diff" in tools
     pr_step = next(step for step in plan.steps if step.tool_name == "get_pull_request")
     assert json.loads(pr_step.arguments_json)["number"] == "12"
+
+
+@pytest.mark.asyncio
+async def test_planner_url_intent_uses_fetch_http() -> None:
+    """An explicit public URL schedules the allowlisted HTTP fetch tool."""
+    catalog = build_tool_registry().definitions()
+    plan = await HeuristicPlanner().plan(
+        make_context("https://docs.example.com/guide を確認して"), catalog, AgentLimits()
+    )
+
+    fetch_step = next(step for step in plan.steps if step.tool_name == "fetch_http")
+    assert json.loads(fetch_step.arguments_json)["url"] == "https://docs.example.com/guide"

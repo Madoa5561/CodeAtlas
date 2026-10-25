@@ -66,6 +66,7 @@ EXPECTED_TOOL_NAMES = {
     "find_callers",
     "find_definition",
     "find_exports",
+    "fetch_http",
     "find_references",
     "find_symbol",
     "get_blame",
@@ -251,6 +252,7 @@ async def test_catalog_definitions_match_strict_schemas(tool_stack: ToolStack) -
     assert schemas["search_code"]["required"] == ["query"]
     assert schemas["search_lexical"]["required"] == ["query"]
     assert schemas["search_vector"]["required"] == ["query"]
+    assert schemas["fetch_http"]["required"] == ["url"]
     assert schemas["traverse_graph"]["required"] == ["start"]
     assert schemas["get_pull_request"]["required"] == ["number"]
     assert schemas["get_pull_request_diff"]["required"] == ["number"]

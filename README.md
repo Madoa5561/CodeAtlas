@@ -3,7 +3,7 @@
 CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き回答をDiscord Forumなどへ返すOSSのCode Intelligence Platformです。
 
 > [!IMPORTANT]
-> 現在は **0.5.0** として、M4〜M6、M7のThrift parser・cross-language relation候補・複数Model Provider（OpenAI/Anthropic/Gemini）まで実装済みです。確定Call/Dependency Graph resolver、Safe HTTP、MCP、要約/影響分析/PR review/Mermaidは未実装です。未実装機能を実装済みとしては扱いません。
+> 現在は **0.6.0** として、M4〜M6、M7のThrift parser・cross-language relation候補・複数Model Provider・SSRF対策付きSafe HTTP Toolまで実装済みです。確定Call/Dependency Graph resolver、要約・影響分析・PR review・Mermaid、MCP、CLI/Web API拡張は未実装です。未実装機能を実装済みとしては扱いません。
 
 ## Status
 
@@ -28,7 +28,8 @@ CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き�
 | Qdrant / Embedding / Vector Search（`search_vector`） | M6実装済み（optional） |
 | Thrift parser / cross-language relation候補 | M7実装済み |
 | OpenAI / Anthropic / Gemini providers | M7実装済み（contract test） |
-| 確定Call/Dependency Graph、Safe HTTP、MCP | 未実装（M7） |
+| SSRF対策付きSafe HTTP Tool（`fetch_http`） | M7実装済み（optional） |
+| 確定Call/Dependency Graph、要約/影響分析/PR review、MCP | 未実装（M7） |
 | Thrift parser、確定Call/Dependency Graph、図生成 | 未実装（M6/M7） |
 
 詳細は[ロードマップ](docs/ROADMAP.md)を参照してください。

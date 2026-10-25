@@ -37,6 +37,7 @@ from codeatlas.domain.retrieval_models import (
 )
 from codeatlas.domain.retrieval_ports import IndexQueryPort
 from codeatlas.domain.vector_ports import VectorQueryPort
+from codeatlas.domain.web_ports import HttpFetchPort
 
 
 class ToolIndexPort(IndexQueryPort, Protocol):
@@ -81,6 +82,7 @@ class ToolServices:
     github: GitHubReadOnlyPort | None = None
     default_github_repository: str | None = None
     vector: VectorQueryPort | None = None
+    http: HttpFetchPort | None = None
 
 
 def authorized_repositories(

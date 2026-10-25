@@ -238,3 +238,10 @@ class VectorIndexError(ProviderError):
 
     default_safe_message = "The vector index is temporarily unavailable."
     code = "vector_index_error"
+
+
+class HttpFetchError(ProviderError):
+    """A safe outbound HTTP fetch failed."""
+
+    default_safe_message = "The external document could not be fetched."
+    code = "http_fetch_error"

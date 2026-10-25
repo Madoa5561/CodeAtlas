@@ -33,3 +33,4 @@
 | [0029](0029-qdrant-vector-projection.md) | Accepted | Qdrant Vector ProjectionとEmbedding Provider |
 | [0030](0030-thrift-parser-and-cross-language-links.md) | Accepted | Thrift ParserとCross-Language Relation候補 |
 | [0031](0031-multiple-model-providers.md) | Accepted | 複数Model Providerの選択とLifecycle |
+| [0032](0032-ssrf-safe-http-tool.md) | Accepted | SSRF対策付きSafe HTTP Tool |

@@ -293,6 +293,8 @@ class HeuristicPlanner:
             add(("get_pull_request_diff",))
         if signals.wants_issue:
             add(("list_issues",))
+        if signals.urls:
+            add(("fetch_http",))
         if signals.wants_callers:
             add(("find_callers", "find_references"))
         if signals.wants_references:
@@ -385,6 +387,14 @@ class HeuristicPlanner:
                 purpose_ja="GitHubのissue一覧を確認します。",
                 purpose_en="List bounded GitHub issues.",
                 query=phrase,
+            )
+        if tool == "fetch_http":
+            return _Draft(
+                tool=definition,
+                purpose_ja="許可された外部URLから本文を取得します。",
+                purpose_en="Fetch an allowlisted external document.",
+                query=phrase,
+                extra={"url": signals.urls[0] if signals.urls else ""},
             )
         if tool == "find_callees":
             return _Draft(

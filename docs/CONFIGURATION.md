@@ -102,6 +102,22 @@ CODEATLAS_GITHUB__WEBHOOK_SECRET=...
 - PR/Issueはexternal evidenceとしてcitationにGitHub URLを付ける。PRはhead SHA、Issueはactive index snapshot SHAを文脈SHAとする。
 - GitHub toolsはlocal repositoryのactive indexを要求する。
 
+## Safe HTTP Tool
+
+```text
+CODEATLAS_SECURITY__HTTP__ENABLED=true
+CODEATLAS_SECURITY__HTTP__ALLOWED_DOMAINS=["docs.example.com"]
+CODEATLAS_SECURITY__HTTP__TIMEOUT_SECONDS=10
+CODEATLAS_SECURITY__HTTP__MAX_RESPONSE_BYTES=500000
+CODEATLAS_SECURITY__HTTP__MAX_REDIRECTS=3
+CODEATLAS_SECURITY__HTTP__RESPECT_ROBOTS_TXT=true
+```
+
+- GET/HEADのみ。allowlist必須。localhost/private/link-local/metadata/IP literal/port 80・443以外は拒否。
+- DNS解決後の全IP、redirect先を再検証する。Content-Type allowlistとresponse size上限を適用。
+- robots.txtを尊重し、HTMLから本文を抽出する。
+- DNS rebindingの完全防止は未実装（best-effort）。
+
 ## Model Providers
 
 Ollama / DeepSeek / OpenAI / Anthropic / Gemini のうち**1つだけ**を有効化する。

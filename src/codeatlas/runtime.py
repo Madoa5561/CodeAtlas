@@ -19,6 +19,7 @@ from codeatlas.adapters.discord import DiscordInteractionPlugin
 from codeatlas.adapters.embedding import build_embedding_provider
 from codeatlas.adapters.github import GitHubRestClient
 from codeatlas.adapters.http.api import ApiServices, create_api_app
+from codeatlas.adapters.http.fetch import SafeHttpFetcher
 from codeatlas.adapters.http.plugin import ApiServerPlugin
 from codeatlas.adapters.model import (
     AnthropicModelProvider,
@@ -105,6 +106,7 @@ class CodeAtlasRuntime:
     webhook_sync: WebhookSyncService | None = None
     embedding_provider: EmbeddingPort | None = None
     vector_index: VectorIndexPort | None = None
+    http_fetcher: SafeHttpFetcher | None = None
     registered_repositories: tuple[RepositoryDescriptor, ...] = ()
     _started: bool = field(default=False, repr=False)
 
@@ -153,6 +155,9 @@ class CodeAtlasRuntime:
                 dimensions=embedding_provider.dimensions,
             )
             vector_search = VectorSearchService(embedding_provider, vector_index)
+        http_fetcher = (
+            SafeHttpFetcher(settings.security.http) if settings.security.http.enabled else None
+        )
         index_store: SqliteIndexStore | None = None
         webhook_sync: WebhookSyncService | None = None
         if (
@@ -233,6 +238,7 @@ class CodeAtlasRuntime:
             github=github_client,
             default_github_repository=settings.github.default_repository,
             vector=vector_search,
+            http=http_fetcher,
             limits=RetrievalLimits(
                 max_results=min(settings.repository.max_search_results, 100),
             ),
@@ -313,6 +319,7 @@ class CodeAtlasRuntime:
             webhook_sync=webhook_sync,
             embedding_provider=embedding_provider,
             vector_index=vector_index,
+            http_fetcher=http_fetcher,
         )
 
     @property
@@ -362,6 +369,8 @@ class CodeAtlasRuntime:
                 await self.vector_index.aclose()
             if self.embedding_provider is not None:
                 await self.embedding_provider.aclose()
+            if self.http_fetcher is not None:
+                await self.http_fetcher.aclose()
             self._started = False
             logger.info("runtime_stopped")
 
