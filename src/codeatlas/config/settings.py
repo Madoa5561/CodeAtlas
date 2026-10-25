@@ -171,6 +171,11 @@ class GitHubSettings(BaseModel):
     webhook_secret: SecretStr | None = None
     api_url: HttpUrl = HttpUrl("https://api.github.com")
     timeout_seconds: float = Field(default=15.0, ge=0.1, le=120.0)
+    default_repository: str | None = Field(
+        default=None,
+        pattern=r"^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$",
+        description="Default owner/name used when a GitHub tool omits the repository.",
+    )
 
     @model_validator(mode="after")
     def require_token_when_enabled(self) -> GitHubSettings:

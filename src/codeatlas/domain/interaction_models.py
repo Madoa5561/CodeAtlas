@@ -221,6 +221,7 @@ class Citation:
     retrieval_method: str
     symbol_id: str | None = None
     symbol_name: str | None = None
+    external_url: str | None = None
 
     def __post_init__(self) -> None:
         if _OPAQUE_ID.fullmatch(self.citation_id) is None:
@@ -235,6 +236,11 @@ class Citation:
             raise ValueError("invalid citation line range")
         if not self.retrieval_method.strip():
             raise ValueError("citation retrieval method is required")
+        if self.external_url is not None and (
+            len(self.external_url) > 2_048
+            or not self.external_url.startswith(("https://", "http://"))
+        ):
+            raise ValueError("invalid citation external URL")
         if self.symbol_id is not None and _OPAQUE_ID.fullmatch(self.symbol_id) is None:
             raise ValueError("invalid citation symbol")
 

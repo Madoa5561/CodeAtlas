@@ -308,6 +308,7 @@ def _to_citation(evidence: EvidenceCandidate) -> Citation:
         retrieval_method=evidence.retrieval_method,
         symbol_id=evidence.symbol_id.value if evidence.symbol_id is not None else None,
         symbol_name=evidence.symbol_name,
+        external_url=evidence.external_url,
     )
 
 
@@ -396,4 +397,6 @@ def _citation_line(evidence: EvidenceCandidate) -> str:
     if evidence.symbol_name:
         details.append(evidence.symbol_name)
     details.append(evidence.retrieval_method)
+    if evidence.external_url:
+        details.append(evidence.external_url)
     return f"- {location} ({' / '.join(details)})"

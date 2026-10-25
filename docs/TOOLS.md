@@ -27,6 +27,9 @@ Tool は repository の working tree を読まない。revision 未指定時は 
 | `search_code` | `repository`, `query` | symbol 検索と text 検索の統合 |
 | `search_lexical` | `repository`, `query`, `path_prefix` | FTS5/BM25 の行単位lexical検索 |
 | `traverse_graph` | `repository`, `start`, `edge_kinds`, `direction`, `max_depth` | call/dependency/reference のbounded BFS |
+| `get_pull_request` | `repository_id`, `repository`(owner/name), `number` | GitHub PR本文・state・head/base SHA |
+| `get_pull_request_diff` | `repository_id`, `repository`, `number` | GitHub PRのbounded unified diff |
+| `list_issues` | `repository_id`, `repository`, `state`, `limit` | GitHub issue一覧（PR除外） |
 | `find_symbol` | `repository`, `name`, `kind` | 宣言と source span |
 | `find_definition` | `repository`, `name` | 定義候補（宣言優先） |
 | `find_exports` | `repository`, `name` or `path` | export宣言、export relation、package/deno manifests経由の公開entrypoint再export |

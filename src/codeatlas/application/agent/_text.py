@@ -253,6 +253,21 @@ _GRAPH_KEYWORDS = (
     "グラフ",
     "影響範囲",
 )
+_PULL_REQUEST_KEYWORDS = (
+    "pull request",
+    "pr ",
+    "プルリク",
+    "プルリクエスト",
+    "pr review",
+    "review pr",
+    "コードレビュー",
+    "レビュー",
+)
+_ISSUE_KEYWORDS = ("issue", "issues", "イシュー", "課題")
+_GITHUB_NUMBER = re.compile(
+    r"(?:#|(?:pr|pull\s+request|issue|プルリク(?:エスト)?|イシュー)\s*#?)(\d{1,7})",
+    re.IGNORECASE,
+)
 
 _ASCII_KEYWORD = re.compile(r"^[a-z0-9 ]+$")
 
@@ -438,6 +453,9 @@ class QuerySignals:
     wants_repository_list: bool
     wants_exports: bool
     wants_graph: bool
+    wants_pull_request: bool
+    wants_issue: bool
+    github_number: int | None
 
     @property
     def search_phrase(self) -> str:
@@ -479,6 +497,9 @@ class QuerySignals:
                 self.wants_repository_list,
                 self.wants_exports,
                 self.wants_graph,
+                self.wants_pull_request,
+                self.wants_issue,
+                self.github_number,
             )
         )
 
@@ -517,6 +538,9 @@ def analyze(query: str) -> QuerySignals:
         wants_repository_list=_matches_any(folded, _REPOSITORY_KEYWORDS),
         wants_exports=_matches_any(folded, _EXPORT_KEYWORDS),
         wants_graph=_matches_any(folded, _GRAPH_KEYWORDS),
+        wants_pull_request=_matches_any(folded, _PULL_REQUEST_KEYWORDS),
+        wants_issue=_matches_any(folded, _ISSUE_KEYWORDS),
+        github_number=(int(number.group(1)) if (number := _GITHUB_NUMBER.search(query)) else None),
     )
 
 

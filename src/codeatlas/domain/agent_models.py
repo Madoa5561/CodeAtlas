@@ -247,6 +247,8 @@ class EvidenceKind(StrEnum):
     REFERENCE = "reference"
     COMMIT = "commit"
     TREE_ENTRY = "tree_entry"
+    PULL_REQUEST = "pull_request"
+    ISSUE = "issue"
 
 
 @dataclass(frozen=True, slots=True)
@@ -266,6 +268,7 @@ class EvidenceCandidate:
     verified: bool = True
     symbol_id: SymbolId | None = None
     symbol_name: str | None = None
+    external_url: str | None = None
 
     def __post_init__(self) -> None:
         if not self.evidence_id.startswith("ev_"):
@@ -280,6 +283,11 @@ class EvidenceCandidate:
             raise ValueError("invalid evidence retrieval method")
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("invalid evidence confidence")
+        if self.external_url is not None and (
+            len(self.external_url) > 2_048
+            or not self.external_url.startswith(("https://", "http://"))
+        ):
+            raise ValueError("invalid evidence external URL")
 
     @classmethod
     def create(
@@ -297,6 +305,7 @@ class EvidenceCandidate:
         verified: bool = True,
         symbol_id: SymbolId | None = None,
         symbol_name: str | None = None,
+        external_url: str | None = None,
     ) -> EvidenceCandidate:
         """Build an evidence candidate with a deterministic provenance identity."""
         evidence_id = stable_evidence_key(
@@ -324,6 +333,7 @@ class EvidenceCandidate:
             verified=verified,
             symbol_id=symbol_id,
             symbol_name=symbol_name,
+            external_url=external_url,
         )
 
 

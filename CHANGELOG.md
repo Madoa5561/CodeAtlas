@@ -9,6 +9,26 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.2.2] - 2026-10-25
+
+### Added
+
+- M6 GitHub read-only tools: `get_pull_request`、`get_pull_request_diff`、`list_issues`
+- GitHub REST adapter（bounded response、retry、safe auth/not-found errors、PR diff、issue一覧のPR除外）
+- 外部evidence: `PULL_REQUEST`/`ISSUE` kind、`external_url`付きCitation、Discord/CLI/APIのcitation表示
+- PlannerのPR intent（`PR #12`等）とIssue intent
+- `CODEATLAS_GITHUB__DEFAULT_REPOSITORY` 設定、ADR-0027
+
+### Changed
+
+- Tool catalogが27 toolsへ拡張
+- `build_tool_executor` が任意のGitHub read-only portを受け取る
+- API/CLIのcitation JSONに`external_url`を追加
+
+### Notes
+
+GitHub token未設定時はGitHub toolsが安全に失敗する。Webhookからの自動index更新とQdrantは未実装。
+
 ## [0.2.1] - 2026-10-25
 
 ### Added

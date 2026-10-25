@@ -16,6 +16,7 @@ import httpx
 
 from codeatlas import __version__
 from codeatlas.adapters.discord import DiscordInteractionPlugin
+from codeatlas.adapters.github import GitHubRestClient
 from codeatlas.adapters.http.api import ApiServices, create_api_app
 from codeatlas.adapters.http.plugin import ApiServerPlugin
 from codeatlas.adapters.model import DeepSeekModelPlugin, OllamaModelPlugin
@@ -79,6 +80,7 @@ class CodeAtlasRuntime:
     container: ApplicationContainer
     discord_plugin: DiscordInteractionPlugin | None = None
     api_plugin: ApiServerPlugin | None = None
+    github_client: GitHubRestClient | None = None
     registered_repositories: tuple[RepositoryDescriptor, ...] = ()
     _started: bool = field(default=False, repr=False)
 
@@ -114,6 +116,9 @@ class CodeAtlasRuntime:
             settings.database.url,
             busy_timeout_seconds=settings.database.busy_timeout_seconds,
         )
+        github_client = (
+            GitHubRestClient.from_settings(settings.github) if settings.github.enabled else None
+        )
         model_plugin: OllamaModelPlugin | DeepSeekModelPlugin
         if settings.deepseek.enabled:
             model_plugin = DeepSeekModelPlugin.from_settings(
@@ -129,6 +134,8 @@ class CodeAtlasRuntime:
             repository=repository_plugin.provider,
             registry=repository_plugin.registry,
             index=index_query,
+            github=github_client,
+            default_github_repository=settings.github.default_repository,
             limits=RetrievalLimits(
                 max_results=min(settings.repository.max_search_results, 100),
             ),
@@ -203,6 +210,7 @@ class CodeAtlasRuntime:
             container=container,
             discord_plugin=discord_plugin,
             api_plugin=api_plugin,
+            github_client=github_client,
         )
 
     @property
@@ -244,6 +252,8 @@ class CodeAtlasRuntime:
             await self.index_query.aclose()
             await self.conversation_store.close()
             await self.webhook_store.close()
+            if self.github_client is not None:
+                await self.github_client.aclose()
             self._started = False
             logger.info("runtime_stopped")
 

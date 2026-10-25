@@ -19,6 +19,7 @@ from codeatlas.application.tools.executor import ToolExecutionPolicy, ToolExecut
 from codeatlas.application.tools.registry import ToolRegistry
 from codeatlas.application.tools.resolver import ToolIndexPort, ToolServices
 from codeatlas.application.tools.schemas import ToolResult
+from codeatlas.domain.github_ports import GitHubReadOnlyPort
 from codeatlas.domain.repository_ports import RepositoryProviderPort, RepositoryRegistryPort
 from codeatlas.domain.retrieval_models import RetrievalLimits
 
@@ -43,6 +44,8 @@ def build_tool_executor(
     limits: RetrievalLimits | None = None,
     policy: ToolExecutionPolicy | None = None,
     tool_registry: ToolRegistry | None = None,
+    github: GitHubReadOnlyPort | None = None,
+    default_github_repository: str | None = None,
 ) -> ToolExecutor:
     """Construct the validated tool executor used by the Retriever.
 
@@ -54,5 +57,7 @@ def build_tool_executor(
         registry=registry,
         index=index,
         limits=limits or RetrievalLimits(),
+        github=github,
+        default_github_repository=default_github_repository,
     )
     return ToolExecutor(tool_registry or build_tool_registry(), services, policy)

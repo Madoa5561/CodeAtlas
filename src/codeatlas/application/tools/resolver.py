@@ -10,6 +10,7 @@ from typing import Protocol
 
 from codeatlas.domain.agent_models import ToolContext
 from codeatlas.domain.errors import ForbiddenError, InputValidationError, NotFoundError
+from codeatlas.domain.github_ports import GitHubReadOnlyPort
 from codeatlas.domain.indexing_models import (
     IndexedFileId,
     IndexedSymbol,
@@ -76,6 +77,8 @@ class ToolServices:
     registry: RepositoryRegistryPort
     index: ToolIndexPort
     limits: RetrievalLimits = field(default_factory=RetrievalLimits)
+    github: GitHubReadOnlyPort | None = None
+    default_github_repository: str | None = None
 
 
 def authorized_repositories(

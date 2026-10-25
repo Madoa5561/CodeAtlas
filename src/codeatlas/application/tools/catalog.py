@@ -9,7 +9,12 @@ from typing import Any, Generic, TypeVar, cast
 
 from pydantic import BaseModel
 
-from codeatlas.application.tools import git_tools, index_tools, repository_tools
+from codeatlas.application.tools import (
+    git_tools,
+    github_tools,
+    index_tools,
+    repository_tools,
+)
 from codeatlas.application.tools.registry import RegisteredTool, ToolRegistry
 from codeatlas.application.tools.resolver import ToolServices
 from codeatlas.application.tools.schemas import (
@@ -26,9 +31,12 @@ from codeatlas.application.tools.schemas import (
     GetDependentsInput,
     GetDiffInput,
     GetFileHistoryInput,
+    GetPullRequestDiffInput,
+    GetPullRequestInput,
     GetRepositoryInput,
     ListBranchesInput,
     ListDirectoryInput,
+    ListIssuesInput,
     ListRepositoriesInput,
     ListTagsInput,
     ReadFileInput,
@@ -181,6 +189,26 @@ TOOL_SPECS: tuple[ToolSpec[Any], ...] = (
         "depth, edge kinds, and result count. " + _REPOSITORY_ARG,
         TraverseGraphInput,
         index_tools.traverse_graph,
+    ),
+    ToolSpec(
+        "get_pull_request",
+        "Read one GitHub pull request by number (title, state, revisions, body) as "
+        "external evidence. " + _REPOSITORY_ARG,
+        GetPullRequestInput,
+        github_tools.get_pull_request,
+    ),
+    ToolSpec(
+        "get_pull_request_diff",
+        "Read the bounded unified diff of one GitHub pull request. " + _REPOSITORY_ARG,
+        GetPullRequestDiffInput,
+        github_tools.get_pull_request_diff,
+    ),
+    ToolSpec(
+        "list_issues",
+        "List bounded GitHub issues (excluding pull requests) for review context. "
+        + _REPOSITORY_ARG,
+        ListIssuesInput,
+        github_tools.list_issues,
     ),
     ToolSpec(
         "find_callers",

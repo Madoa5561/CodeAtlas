@@ -91,3 +91,18 @@ async def test_planner_graph_intent_uses_traverse_graph() -> None:
     arguments = json.loads(graph_step.arguments_json)
     assert arguments["start"] == "Service"
     assert arguments["start_type"] == "symbol"
+
+
+@pytest.mark.asyncio
+async def test_planner_pull_request_intent_uses_github_tools() -> None:
+    """A PR review question schedules metadata and diff reads with its number."""
+    catalog = build_tool_registry().definitions()
+    plan = await HeuristicPlanner().plan(
+        make_context("PR #12 をレビューして"), catalog, AgentLimits()
+    )
+
+    tools = [step.tool_name for step in plan.steps]
+    assert "get_pull_request" in tools
+    assert "get_pull_request_diff" in tools
+    pr_step = next(step for step in plan.steps if step.tool_name == "get_pull_request")
+    assert json.loads(pr_step.arguments_json)["number"] == "12"

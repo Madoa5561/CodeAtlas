@@ -96,6 +96,7 @@ def _response_payload(response: CanonicalResponse) -> dict[str, object]:
                 "end_line": citation.end_line,
                 "symbol_name": citation.symbol_name,
                 "retrieval_method": citation.retrieval_method,
+                "external_url": citation.external_url,
             }
             for citation in response.citations
         ],

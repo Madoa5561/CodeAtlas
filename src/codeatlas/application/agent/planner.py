@@ -286,6 +286,11 @@ class HeuristicPlanner:
             add(("find_exports", "find_symbol"))
         if signals.wants_graph:
             add(("traverse_graph",))
+        if signals.wants_pull_request and signals.github_number is not None:
+            add(("get_pull_request",))
+            add(("get_pull_request_diff",))
+        if signals.wants_issue:
+            add(("list_issues",))
         if signals.wants_callers:
             add(("find_callers", "find_references"))
         if signals.wants_references:
@@ -363,6 +368,21 @@ class HeuristicPlanner:
                         "file" if not signals.identifiers and file_path is not None else "symbol"
                     ),
                 },
+            )
+        if tool in {"get_pull_request", "get_pull_request_diff"}:
+            return _Draft(
+                tool=definition,
+                purpose_ja="GitHubのpull requestを確認します。",
+                purpose_en="Read the referenced GitHub pull request.",
+                query=phrase,
+                extra={"number": str(signals.github_number or "")},
+            )
+        if tool == "list_issues":
+            return _Draft(
+                tool=definition,
+                purpose_ja="GitHubのissue一覧を確認します。",
+                purpose_en="List bounded GitHub issues.",
+                query=phrase,
             )
         if tool == "find_callees":
             return _Draft(

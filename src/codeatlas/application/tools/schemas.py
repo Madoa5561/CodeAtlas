@@ -248,6 +248,38 @@ class TraverseGraphInput(RepositoryScopedInput):
     limit: int = Field(default=50, ge=1, le=100)
 
 
+_GITHUB_SLUG_PATTERN = r"^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$"
+
+
+class GitHubScopedInput(RepositoryScopedInput):
+    """Optional GitHub owner/name selection with the configured default."""
+
+    repository: str | None = Field(
+        default=None,
+        pattern=_GITHUB_SLUG_PATTERN,
+        description="GitHub owner/name; defaults to the configured repository.",
+    )
+
+
+class GetPullRequestInput(GitHubScopedInput):
+    """Read one pull request by number."""
+
+    number: str = Field(min_length=1, max_length=7, pattern=r"^[0-9]+$")
+
+
+class GetPullRequestDiffInput(GitHubScopedInput):
+    """Read the bounded unified diff of one pull request."""
+
+    number: str = Field(min_length=1, max_length=7, pattern=r"^[0-9]+$")
+
+
+class ListIssuesInput(GitHubScopedInput):
+    """List bounded issues for one GitHub repository."""
+
+    state: Literal["open", "closed", "all"] = "open"
+    limit: int = Field(default=10, ge=1, le=30)
+
+
 class GetCommitInput(RevisionScopedInput):
     """Read metadata for one commit."""
 

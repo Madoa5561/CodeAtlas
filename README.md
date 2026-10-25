@@ -3,7 +3,7 @@
 CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き回答をDiscord Forumなどへ返すOSSのCode Intelligence Platformです。
 
 > [!IMPORTANT]
-> 現在は **0.2.1** として、M4「Agent + Model Provider」、M5「Discord Forum MVP」、M6のFTS5/BM25 lexical retrieval・graph traversal・Web API・GitHub Webhook受信まで実装済みです。Qdrant/Vector Search、GitHub PR/Issue Tool、Thrift parser、MCPは未実装です。未実装機能を実装済みとしては扱いません。
+> 現在は **0.2.2** として、M4「Agent + Model Provider」、M5「Discord Forum MVP」、M6のFTS5/BM25 lexical retrieval・graph traversal・Web API・GitHub Webhook受信・GitHub PR/Issue read-only toolsまで実装済みです。Qdrant/Vector Search、Webhookからの自動index、Thrift parser、MCPは未実装です。未実装機能を実装済みとしては扱いません。
 
 ## Status
 
@@ -23,7 +23,8 @@ CodeAtlasは、GitHubリポジトリを解析し、検証可能な根拠付き�
 | 会話履歴、retention purge、diagnostic CLI | M5実装済み |
 | SQLite FTS5/BM25 lexical search、graph traversal | M6実装済み |
 | Web API（health/repositories/ask）、GitHub Webhook受信 | M6実装済み |
-| Qdrant、Vector Search、GitHub PR/Issue Tool、Webhookからの自動index | 未実装（M6） |
+| GitHub PR/Issue read-only Tool（外部evidence） | M6実装済み |
+| Qdrant、Vector Search、Webhookからの自動index | 未実装（M6） |
 | Thrift parser、確定Call/Dependency Graph、図生成 | 未実装（M6/M7） |
 
 詳細は[ロードマップ](docs/ROADMAP.md)を参照してください。

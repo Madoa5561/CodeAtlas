@@ -84,6 +84,20 @@ CODEATLAS_DEEPSEEK__THINKING=false
 - 到達不能・timeout・rate limit時はbounded retry後、あるいはextractive fallbackで`partial`回答になる。
 - `/models`へのbounded probeで起動時availabilityを記録する（到達不能でも起動は継続）。
 
+## GitHub
+
+```text
+CODEATLAS_GITHUB__ENABLED=true
+CODEATLAS_GITHUB__TOKEN=...
+CODEATLAS_GITHUB__DEFAULT_REPOSITORY=evex-dev/linejs
+CODEATLAS_GITHUB__WEBHOOK_SECRET=...
+```
+
+- `TOKEN`はread-only GitHub API用。未設定で`ENABLED=true`は起動時に失敗する。
+- `DEFAULT_REPOSITORY`はtool引数でowner/nameを省略した場合に使う。
+- PR/Issueはexternal evidenceとしてcitationにGitHub URLを付ける。PRはhead SHA、Issueはactive index snapshot SHAを文脈SHAとする。
+- GitHub toolsはlocal repositoryのactive indexを要求する。
+
 ## Web API and GitHub Webhook
 
 ```text

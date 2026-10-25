@@ -203,3 +203,24 @@ class IndexQueryError(CodeAtlasError):
 
     default_safe_message = "The code index is unavailable."
     code = "index_query_error"
+
+
+class GitHubProviderError(ProviderError):
+    """A read-only GitHub API operation failed safely."""
+
+    default_safe_message = "The GitHub API is temporarily unavailable."
+    code = "github_provider_error"
+
+
+class GitHubAuthenticationError(GitHubProviderError):
+    """GitHub rejected the configured token."""
+
+    default_safe_message = "GitHub authentication failed."
+    code = "github_authentication_error"
+
+
+class GitHubNotFoundError(GitHubProviderError, NotFoundError):
+    """The requested GitHub resource does not exist or is not visible."""
+
+    default_safe_message = "The requested GitHub resource was not found."
+    code = "github_not_found"

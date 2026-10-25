@@ -74,9 +74,12 @@ EXPECTED_TOOL_NAMES = {
     "get_dependents",
     "get_diff",
     "get_file_history",
+    "get_pull_request",
+    "get_pull_request_diff",
     "get_repository",
     "list_branches",
     "list_directory",
+    "list_issues",
     "list_repositories",
     "list_tags",
     "read_file",
@@ -247,6 +250,9 @@ async def test_catalog_definitions_match_strict_schemas(tool_stack: ToolStack) -
     assert schemas["search_code"]["required"] == ["query"]
     assert schemas["search_lexical"]["required"] == ["query"]
     assert schemas["traverse_graph"]["required"] == ["start"]
+    assert schemas["get_pull_request"]["required"] == ["number"]
+    assert schemas["get_pull_request_diff"]["required"] == ["number"]
+    assert schemas["list_issues"].get("required", []) == []
     assert schemas["find_definition"]["required"] == ["name"]
     assert schemas["find_exports"].get("required", []) == []
     assert schemas["get_dependents"]["required"] == ["target"]
