@@ -9,6 +9,19 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.1.5] - 2026-10-25
+
+### Added
+
+- `find_exports` Tool: export宣言、export relation、`package.json`/`deno.json` の `exports` マップ、entrypointの再exportを照合し、公開APIとしてのexportを確認
+- Plannerにexport/エクスポート/公開/entrypoint intentを追加
+
+### Changed
+
+- Discord回答をcomposerのblock列からの単一描画に統一し、citation・confidence・不明点・検索方法の二重フッターを解消
+- 引用を本文で実際に使ったevidence中心に絞り、最大8件・根拠一覧はpath/行/symbol/検索方法のコンパクト形式に変更
+- 回答全体のbudgetを単一message長からagent budgetへ変更し、長い根拠付き回答はDiscord側で複数messageへ分割
+
 ## [0.1.4] - 2026-10-25
 
 ### Fixed

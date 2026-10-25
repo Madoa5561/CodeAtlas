@@ -51,7 +51,7 @@ M3ではsafe textだけをgeneration-scoped SQLite rowへ保存し、unsafe cont
 
 ## M4 Agent Boundary
 
-- Toolはcatalogに登録された21個のread-only Toolだけで、shell、write、network、repository mutationはない。
+- Toolはcatalogに登録された22個のread-only Toolだけで、shell、write、network、repository mutationはない。
 - 引数はPydantic strict model（`extra=forbid`、frozen）で検証し、Tool Executorがtool名allowlist、repository scope、timeout、payload上限を強制する。
 - repository contentはuntrusted envelope（明示delimiter）内でのみReasonerへ渡し、evidence内の命令をsystem instructionとして扱わない。ReasonerはToolを実行できない。
 - citationはTool evidenceのrepository/SHA/path/lineから直接生成し、modelが返したcitation IDは実在evidenceと照合する。invented citationは破棄する。

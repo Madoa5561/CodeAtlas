@@ -74,6 +74,7 @@ def _inline(value: str, *, limit: int = 400) -> str:
 
 
 def _render_markers(citation_ids: tuple[str, ...], indices: dict[str, int]) -> str:
+    """Return numbered markers for callers that render an explicit source list."""
     markers = [
         f"[{indices[citation_id]}]" for citation_id in citation_ids if citation_id in indices
     ]
@@ -107,14 +108,12 @@ def _render_code_block(block: ResponseBlock) -> str:
     return f"{fence}{language}\n{body}\n{fence}"
 
 
-def _render_block(block: ResponseBlock, indices: dict[str, int]) -> str:
-    markers = _render_markers(block.citation_ids, indices)
+def _render_block(block: ResponseBlock) -> str:
     if block.kind is ResponseBlockKind.CODE:
-        rendered = _render_code_block(block)
-        return f"{rendered}\n{markers.strip()}" if markers else rendered
+        return _render_code_block(block)
     if block.kind is ResponseBlockKind.BULLETS:
-        return _render_bullets(block.text) + markers
-    return block.text.strip() + markers
+        return _render_bullets(block.text)
+    return block.text.strip()
 
 
 def _render_citation_line(index: int, citation: Citation) -> str:
@@ -182,22 +181,15 @@ def render_markdown(
     locale: str = "ja",
     max_citations: int | None = None,
 ) -> str:
-    """Render a canonical response as Discord markdown without chunking."""
-    indices = {
-        citation.citation_id: index
-        for index, citation in enumerate(
-            response.citations[: _citation_limit(response, max_citations)],
-            start=1,
-        )
-    }
-    sections = [_render_block(block, indices) for block in response.blocks]
-    citation_footer = render_citation_footer(response, locale=locale, max_citations=max_citations)
-    if citation_footer:
-        sections.append(citation_footer)
-    metadata_footer = _render_metadata_footer(response, locale=locale)
-    if metadata_footer:
-        sections.append(metadata_footer)
-    return "\n\n".join(section for section in sections if section)
+    """Render canonical blocks as Discord markdown.
+
+    The canonical response already carries confidence, uncertainties, search
+    methods and a compact citation section as blocks, so the presentation layer
+    must not append a second footer. ``max_citations`` is retained for callers
+    that still render the optional citation footer directly.
+    """
+    del max_citations
+    return "\n\n".join(_render_block(block) for block in response.blocks if block.text.strip())
 
 
 def _is_grapheme_extender(value: str) -> bool:

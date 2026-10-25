@@ -65,6 +65,7 @@ EXPECTED_TOOL_NAMES = {
     "find_callees",
     "find_callers",
     "find_definition",
+    "find_exports",
     "find_references",
     "find_symbol",
     "get_blame",
@@ -112,6 +113,10 @@ def _make_repository(root: Path, *, files: tuple[str, ...]) -> tuple[str, str]:
     for relative in files:
         (root / relative).write_text(_SERVICE_INITIAL, encoding="utf-8")
     (root / "notes.txt").write_text(_NOTES, encoding="utf-8")
+    (root / "src" / "package.json").write_text(
+        '{"name":"fixture","exports":{".":"./service.ts"}}',
+        encoding="utf-8",
+    )
     (root / "big.txt").write_text(_BIG_TEXT, encoding="utf-8")
     run_git(root, "add", ".")
     run_git(root, "commit", "-m", "initial commit")
@@ -239,6 +244,7 @@ async def test_catalog_definitions_match_strict_schemas(tool_stack: ToolStack) -
     assert schemas["search_text"]["required"] == ["query"]
     assert schemas["search_code"]["required"] == ["query"]
     assert schemas["find_definition"]["required"] == ["name"]
+    assert schemas["find_exports"].get("required", []) == []
     assert schemas["get_dependents"]["required"] == ["target"]
     assert schemas["get_file_history"]["required"] == ["path"]
     assert schemas["get_blame"]["required"] == ["path"]
@@ -258,6 +264,7 @@ async def test_evidence_bearing_tools_return_verified_provenance(tool_stack: Too
         ("search_code", {"query": "helper"}, "index_text_search"),
         ("find_symbol", {"name": "helper"}, "index_symbol_exact"),
         ("find_definition", {"name": "Service"}, "index_definition"),
+        ("find_exports", {"name": "Service"}, "index_export_symbol"),
         ("find_references", {"name": "helper"}, "index_reference"),
         ("find_callers", {"name": "helper"}, "index_call"),
         ("find_callees", {"symbol": "Service.run"}, "index_call"),
@@ -277,10 +284,36 @@ async def test_evidence_bearing_tools_return_verified_provenance(tool_stack: Too
     for name, arguments, method in cases:
         outcome = await _execute(tool_stack, name, arguments)
         _assert_evidence(outcome, tool_stack)
-        assert all(evidence.retrieval_method.startswith(method) for evidence in outcome.evidence), (
-            name,
-            [item.retrieval_method for item in outcome.evidence],
-        )
+        if name == "find_exports":
+            assert all(
+                evidence.retrieval_method.startswith("index_export")
+                for evidence in outcome.evidence
+            ), (name, [item.retrieval_method for item in outcome.evidence])
+        else:
+            assert all(
+                evidence.retrieval_method.startswith(method) for evidence in outcome.evidence
+            ), (name, [item.retrieval_method for item in outcome.evidence])
+
+
+async def test_find_exports_reports_public_symbols(tool_stack: ToolStack) -> None:
+    """Exported declarations are returned with verified provenance."""
+    outcome = await _execute(tool_stack, "find_exports", {"name": "Service"})
+    assert outcome.ok
+    payload = _payload(outcome)
+    assert payload["is_exported"] is True
+    assert payload["is_publicly_exported"] is True
+    assert payload["public_exports"]
+    assert any(
+        item["path"] == "src/service.ts" and item["exported"] is True
+        for item in payload["exported_symbols"]
+    )
+    assert any(
+        evidence.retrieval_method.startswith("index_export") for evidence in outcome.evidence
+    )
+    _assert_evidence(outcome, tool_stack)
+
+    by_path = await _execute(tool_stack, "find_exports", {"path": "src/service.ts"})
+    assert _payload(by_path)["is_exported"] is True
 
 
 async def test_payloads_carry_expected_structure(tool_stack: ToolStack) -> None:
@@ -310,6 +343,7 @@ async def test_payloads_carry_expected_structure(tool_stack: ToolStack) -> None:
     assert {item["path"] for item in source_directory["entries"]} == {
         "src/service.ts",
         "src/other.ts",
+        "src/package.json",
     }
 
     commit = _payload(await _execute(tool_stack, "get_commit"))

@@ -25,3 +25,4 @@
 | [0021](0021-discord-interaction-and-conversation.md) | Accepted | M5 Discord Adapterと会話状態の永続化 |
 | [0022](0022-release-and-deployment-0-1-0.md) | Accepted | 0.1.0の配布・デプロイ方式 |
 | [0023](0023-deepseek-openai-compatible-provider.md) | Accepted | DeepSeekをOpenAI互換Providerとして追加 |
+| [0024](0024-discord-rendering-and-export-verification.md) | Accepted | Discord回答の単一描画とexport確認 |

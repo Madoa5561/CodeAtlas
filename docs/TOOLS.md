@@ -27,6 +27,7 @@ Tool は repository の working tree を読まない。revision 未指定時は 
 | `search_code` | `repository`, `query` | symbol 検索と text 検索の統合 |
 | `find_symbol` | `repository`, `name`, `kind` | 宣言と source span |
 | `find_definition` | `repository`, `name` | 定義候補（宣言優先） |
+| `find_exports` | `repository`, `name` or `path` | export宣言、export relation、package/deno manifests経由の公開entrypoint再export |
 | `find_references` | `repository`, `name` | reference/call/extends/implements 候補 |
 | `find_callers` | `repository`, `name` | call 候補の source 側 |
 | `find_callees` | `repository`, `name` | call 候補の target 側 |
@@ -40,6 +41,8 @@ Tool は repository の working tree を読まない。revision 未指定時は 
 | `get_diff` | `repository`, `revision` | 安全な diff |
 
 `get_pull_request`、`get_pull_request_diff`、`list_issues` は GitHub App/API が必要なため M6 で実装する。0.1.0 の tool catalog には表示しない。`find_callers` などの call 関係は parser の call candidate であり、確定 Call Graph ではない（confidence と provenance を付与する）。
+
+`find_exports` は、宣言の `exported` 属性と export relation に加え、`package.json` / `deno.json` の `exports` マップと entrypoint の再export構文（`export { Client } from ...`）を照合する。公開entrypoint経由のexportを確認した場合は `index_export_manifest` と `index_export_public` の evidence を返す。manifestが存在しない、または条件分岐の全経路を解析できない場合は「未確認」として扱う。
 
 ## HTTP Tool
 

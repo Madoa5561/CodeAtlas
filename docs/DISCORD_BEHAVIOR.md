@@ -38,6 +38,7 @@
 
 - 処理中は typing indicator を表示する。
 - 回答は結論、根拠、推測、不明点、citation（repository@SHA path:line）、検索方法、確信度を含む。
+- 回答本文はcomposerが生成した単一のblock列を描画し、citation/confidence/不明点/検索方法をフッターで二重表示しない。引用は本文で実際に使ったevidenceを優先し、根拠一覧はpath・行範囲・symbol・検索方法をコンパクトに表示する。長い回答は複数messageへ分割する。
 - Discord の message 上限に合わせて分割送信する。code fence を途中で壊さず、必要なら fence を閉じて次の chunk で再開する。
 - 分割数が上限を超える場合は明示的に truncation を表示する。
 - Discord API の rate limit は discord.py に委ね、HTTP error 時は安全なエラーメッセージだけを送る。

@@ -76,6 +76,7 @@ class CitationComposer:
             if uncertainty.strip()
         ]
         citation_entries = [_citation_line(evidence) for evidence in selected]
+        citation_header = _citation_header(context, selected)
         follow_up_entries = [f"- {gap.description}" for gap in reasoning.gaps]
         has_evidence = bool(evidence_by_id)
         if has_evidence:
@@ -96,9 +97,10 @@ class CitationComposer:
             inference_entries=inference_entries,
             uncertainty_entries=uncertainty_entries,
             citation_entries=citation_entries,
+            citation_header=citation_header,
             methods=methods,
             follow_up_entries=follow_up_entries,
-            budget=min(capabilities.max_response_chars, limits.max_response_chars),
+            budget=limits.max_response_chars,
         )
         return CanonicalResponse(
             status=status,
@@ -118,7 +120,6 @@ class CitationComposer:
         limits: AgentLimits,
     ) -> tuple[EvidenceCandidate, ...]:
         evidence_by_id = {item.evidence.evidence_id: item.evidence for item in ranked.evidence}
-        max_citations = min(capabilities.max_citations, max(1, limits.max_evidence * 2), 20)
         ordered: list[EvidenceCandidate] = []
         seen: set[str] = set()
 
@@ -135,9 +136,17 @@ class CitationComposer:
         for inference in reasoning.inferences:
             for evidence_id in inference.evidence_ids:
                 add(evidence_id)
+
+        cited_count = len(ordered)
+        # Keep only cited evidence plus a small supporting set. Answers with many
+        # verified facts should not turn every retrieval hit into a citation.
+        limit = min(capabilities.max_citations, 8)
+        target = cited_count if cited_count >= 3 else min(3, limit)
         for item in ranked.evidence:
+            if len(ordered) >= target:
+                break
             add(item.evidence.evidence_id)
-        return tuple(ordered[:max_citations])
+        return tuple(ordered[:limit])
 
     def _compose_blocks(
         self,
@@ -150,6 +159,7 @@ class CitationComposer:
         inference_entries: list[tuple[str, tuple[str, ...]]],
         uncertainty_entries: list[str],
         citation_entries: list[str],
+        citation_header: str,
         methods: tuple[str, ...],
         follow_up_entries: list[str],
         budget: int,
@@ -235,7 +245,7 @@ class CitationComposer:
             blocks.append(
                 ResponseBlock(
                     kind=ResponseBlockKind.BULLETS,
-                    text="\n".join([_citations_header(context), *citation_entries]),
+                    text="\n".join([citation_header, *citation_entries]),
                 )
             )
         if methods:
@@ -361,16 +371,29 @@ def _follow_ups_header(context: QueryContext) -> str:
     return localized(context.locale, ja="追加調査候補:", en="Suggested follow-ups:")
 
 
+def _citation_header(context: QueryContext, selected: tuple[EvidenceCandidate, ...]) -> str:
+    """Return a compact citation header with one provenance per repository/SHA."""
+    provenance = list(
+        dict.fromkeys(
+            f"{evidence.repository_id.value}@{evidence.commit_sha}" for evidence in selected
+        )
+    )
+    header = _citations_header(context)
+    if not provenance:
+        return header
+    if len(provenance) == 1:
+        return f"{header} {provenance[0]}"
+    return f"{header}\n" + "\n".join(f"- {value}" for value in provenance)
+
+
 def _citation_line(evidence: EvidenceCandidate) -> str:
     path = evidence.path.as_posix() or "."
     if evidence.end_line != evidence.start_line:
         location = f"{path}:{evidence.start_line}-{evidence.end_line}"
     else:
         location = f"{path}:{evidence.start_line}"
-    provenance = f"{evidence.repository_id.value}@{evidence.commit_sha} {location}"
     details: list[str] = []
     if evidence.symbol_name:
-        details.append(f"symbol: {evidence.symbol_name}")
-    details.append(f"method: {evidence.retrieval_method}")
-    joined = " / ".join(details)
-    return f"- {provenance} ({joined})"
+        details.append(evidence.symbol_name)
+    details.append(evidence.retrieval_method)
+    return f"- {location} ({' / '.join(details)})"

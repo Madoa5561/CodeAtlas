@@ -450,6 +450,29 @@ async def test_grounded_answer_contains_exact_sha_path_and_line() -> None:
     assert outcome.diagnostics.iterations >= 1
 
 
+async def test_citations_are_trimmed_to_cited_and_supporting_evidence() -> None:
+    """Only cited evidence plus a small supporting context appears in the answer."""
+    evidence = tuple(
+        make_evidence(
+            start_line=index,
+            end_line=index,
+            excerpt=f"candidate evidence {index}",
+            method="search_text",
+        )
+        for index in range(1, 15)
+    )
+    executor = FakeToolExecutor(evidence=evidence)
+    outcome = await build_pipeline(executor, ScriptedModelProvider([grounded_payload])).run(
+        make_context("`parseConfig` はどこで定義されていますか"), make_limits(max_evidence=10)
+    )
+
+    response = outcome.response
+    assert 1 <= len(response.citations) <= 4
+    assert "引用元:" in response.plain_text
+    assert SHA in response.plain_text
+    assert "src/app.ts" in response.plain_text
+
+
 async def test_model_disabled_degrades_to_extractive_partial() -> None:
     executor = FakeToolExecutor()
     orchestrator = build_pipeline(executor, provider=None)
@@ -613,7 +636,7 @@ async def test_response_respects_channel_length_budget() -> None:
     )
     response = outcome.response
     assert response.blocks
-    assert len(response.plain_text) <= 200
+    assert len(response.plain_text) <= make_limits().max_response_chars
     assert all(len(block.text) <= 10_000 for block in response.blocks)
     assert all(block.kind is not ResponseBlockKind.CODE for block in response.blocks)
 

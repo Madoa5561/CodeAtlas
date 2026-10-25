@@ -17,6 +17,7 @@ from codeatlas.application.tools.schemas import (
     FindCalleesInput,
     FindCallersInput,
     FindDefinitionInput,
+    FindExportsInput,
     FindReferencesInput,
     FindSymbolInput,
     GetBlameInput,
@@ -149,6 +150,13 @@ TOOL_SPECS: tuple[ToolSpec[Any], ...] = (
         "suffix match. " + _REPOSITORY_ARG,
         FindDefinitionInput,
         index_tools.find_definition,
+    ),
+    ToolSpec(
+        "find_exports",
+        "Check whether a symbol is exported and list export relations for a symbol or file. "
+        "Use this for questions about public/re-exported APIs. " + _REPOSITORY_ARG,
+        FindExportsInput,
+        index_tools.find_exports,
     ),
     ToolSpec(
         "find_references",

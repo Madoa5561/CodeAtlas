@@ -67,6 +67,7 @@ def symbol_evidence(
     path: RepositoryPath,
     *,
     retrieval_method: str,
+    excerpt_prefix: str = "",
 ) -> EvidenceCandidate:
     """Return evidence for one indexed declaration span."""
     start, end = (max(1, symbol.span.start_line), max(1, symbol.span.end_line))
@@ -77,7 +78,7 @@ def symbol_evidence(
         path=path,
         start_line=start,
         end_line=max(start, end),
-        excerpt=symbol.signature or symbol.name,
+        excerpt=f"{excerpt_prefix}{symbol.signature or symbol.name}",
         retrieval_method=retrieval_method,
         confidence=symbol.confidence,
         symbol_id=symbol.symbol_id.value,
@@ -91,6 +92,7 @@ def relation_evidence(
     relation: IndexedRelation,
     *,
     retrieval_method: str,
+    excerpt_prefix: str = "",
 ) -> EvidenceCandidate:
     """Return evidence for one parser-derived relation span."""
     kind = _relation_evidence_kind(relation.relation_kind)
@@ -101,7 +103,7 @@ def relation_evidence(
         path=relation.path,
         start_line=relation.span.start_line,
         end_line=relation.span.end_line,
-        excerpt=relation.raw_target,
+        excerpt=f"{excerpt_prefix}{relation.raw_target}",
         retrieval_method=retrieval_method,
         confidence=relation.confidence,
         symbol_id=(

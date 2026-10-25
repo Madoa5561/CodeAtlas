@@ -244,7 +244,7 @@ def test_code_fence_widens_for_embedded_fences() -> None:
     assert "````\n```\ninner\n```\n````" in markdown
 
 
-def test_citation_footer_renders_sources() -> None:
+def test_canonical_blocks_are_rendered_without_duplicate_footer() -> None:
     response = _response(
         _block(ResponseBlockKind.TEXT, "回答です。", citation_ids=("cit_1",)),
         _block(ResponseBlockKind.TEXT, "追加です。", citation_ids=("cit_2",)),
@@ -252,15 +252,16 @@ def test_citation_footer_renders_sources() -> None:
     )
 
     markdown = render_markdown(response)
+    footer = render_citation_footer(response)
 
-    assert "回答です。 [1]" in markdown
-    assert "追加です。 [2]" in markdown
-    assert "**根拠**" in markdown
-    assert "`src/first.ts:10-14`" in markdown
-    assert "`src/app.ts:20-24`" in markdown
-    assert f"`{_SHA}`" in markdown
-    assert "`first`" in markdown
-    assert "`lexical`" in markdown
+    assert markdown == "回答です。\n\n追加です。"
+    assert "**根拠**" not in markdown
+    assert "**根拠**" in footer
+    assert "`src/first.ts:10-14`" in footer
+    assert "`src/app.ts:20-24`" in footer
+    assert f"`{_SHA}`" in footer
+    assert "`first`" in footer
+    assert "`lexical`" in footer
 
 
 def test_citation_footer_respects_limit() -> None:
@@ -275,8 +276,7 @@ def test_citation_footer_respects_limit() -> None:
     assert "`src/app.ts:10-14`" in footer
     assert "`src/app.ts:20-24`" in footer
     assert "`src/app.ts:30-34`" not in footer
-    assert "回答です。 [1] [2]" in markdown
-    assert " [3]" not in markdown
+    assert markdown == "回答です。"
 
 
 def test_english_locale_labels() -> None:
@@ -289,13 +289,14 @@ def test_english_locale_labels() -> None:
     )
 
     markdown = render_markdown(response, locale="en")
+    footer = render_citation_footer(response, locale="en")
 
-    assert "**Sources**" in markdown
-    assert "**Confidence**" in markdown
-    assert "**Uncertainties**" in markdown
-    assert "**Search methods**" in markdown
-    assert "**Follow-up questions**" in markdown
-    assert "根拠" not in markdown
+    assert markdown == "Answer."
+    assert "**Sources**" in footer
+    assert "`lexical`" in footer
+    assert "**Confidence**" not in markdown
+    assert "**Uncertainties**" not in markdown
+    assert "**Search methods**" not in markdown
 
 
 def test_error_response_has_no_metadata_footer() -> None:

@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
-from codeatlas.application.tools.evidence import relation_evidence, symbol_evidence
+import json
+import posixpath
+import re
+from pathlib import PurePosixPath
+
+from codeatlas.application.tools.evidence import (
+    make_evidence,
+    relation_evidence,
+    symbol_evidence,
+)
 from codeatlas.application.tools.resolver import (
     ToolServices,
     build_symbol_query,
@@ -17,17 +26,18 @@ from codeatlas.application.tools.schemas import (
     FindCalleesInput,
     FindCallersInput,
     FindDefinitionInput,
+    FindExportsInput,
     FindReferencesInput,
     FindSymbolInput,
     GetDependenciesInput,
     GetDependentsInput,
     ToolResult,
 )
-from codeatlas.domain.agent_models import EvidenceCandidate, ToolContext
+from codeatlas.domain.agent_models import EvidenceCandidate, EvidenceKind, ToolContext
 from codeatlas.domain.errors import NotFoundError
 from codeatlas.domain.indexing_models import IndexedFileId, IndexedSymbol
 from codeatlas.domain.repository_models import RepositoryDescriptor, RepositoryPath
-from codeatlas.domain.retrieval_models import IndexedRelation, RelationKind
+from codeatlas.domain.retrieval_models import IndexedRelation, IndexTextHit, RelationKind
 
 _REFERENCE_KINDS = (
     RelationKind.CALL,
@@ -35,6 +45,169 @@ _REFERENCE_KINDS = (
     RelationKind.IMPLEMENTS,
     RelationKind.REFERENCE,
 )
+
+_EXPORT_MANIFEST_NAMES = frozenset({"package.json", "deno.json", "deno.jsonc"})
+_MANIFEST_SEARCH_PATTERN = '"exports"'
+_MAX_MANIFEST_BYTES = 512_000
+_MAX_EXPORT_TARGETS = 20
+_MAX_PUBLIC_MATCHES = 5
+
+
+def _manifest_export_targets(content: str) -> tuple[str, ...]:
+    """Return string export targets from a package/deno manifest."""
+    try:
+        payload = json.loads(content)
+    except ValueError:
+        return ()
+    if not isinstance(payload, dict):
+        return ()
+    exports = payload.get("exports")
+    if not isinstance(exports, dict):
+        return ()
+    targets: list[str] = []
+
+    def collect(value: object) -> None:
+        if isinstance(value, str):
+            if value.startswith("./"):
+                targets.append(value)
+            return
+        if isinstance(value, dict):
+            for item in value.values():
+                collect(item)
+        elif isinstance(value, list):
+            for item in value:
+                collect(item)
+
+    collect(exports)
+    return tuple(dict.fromkeys(targets))[:_MAX_EXPORT_TARGETS]
+
+
+def _public_export_match(content: str, name: str) -> tuple[int, int, str] | None:
+    """Find a direct or block export of ``name`` in one entrypoint file."""
+    escaped = re.escape(name)
+    patterns = (
+        rf"export\s+(?:type\s+)?\{{[^}}]*\b{escaped}\b[^}}]*\}}\s*from",
+        rf"export\s+(?:default\s+)?(?:abstract\s+)?"
+        rf"(?:class|interface|function|const|let|var|enum|type)\s+{escaped}\b",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, content, flags=re.DOTALL)
+        if match is None:
+            continue
+        start_line = content.count("\n", 0, match.start()) + 1
+        end_line = content.count("\n", 0, match.end()) + 1
+        return start_line, end_line, " ".join(match.group(0).split())
+    return None
+
+
+def _line_for_fragment(content: str, fragment: str) -> int:
+    index = content.find(fragment)
+    if index < 0:
+        return 1
+    return content.count("\n", 0, index) + 1
+
+
+async def _public_export_evidence(
+    services: ToolServices,
+    descriptor: RepositoryDescriptor,
+    commit_sha: str,
+    generation_id: str,
+    name: str,
+) -> tuple[tuple[dict[str, object], ...], tuple[EvidenceCandidate, ...]]:
+    """Resolve package manifests and entrypoints to public re-export evidence."""
+    if not name:
+        return (), ()
+    hits = await _run_sync_search(
+        services,
+        generation_id,
+        _MANIFEST_SEARCH_PATTERN,
+    )
+    manifests = tuple(
+        dict.fromkeys(
+            hit.path
+            for hit in hits
+            if hit.path.as_posix().rsplit("/", 1)[-1] in _EXPORT_MANIFEST_NAMES
+            and "node_modules/" not in f"{hit.path.as_posix()}/"
+        )
+    )[:_MAX_EXPORT_TARGETS]
+    public: list[dict[str, object]] = []
+    evidence: list[EvidenceCandidate] = []
+    for manifest_path in manifests:
+        manifest = await services.index.get_file(generation_id, manifest_path)
+        if (
+            manifest is None
+            or manifest.content is None
+            or len(manifest.content) > _MAX_MANIFEST_BYTES
+        ):
+            continue
+        targets = _manifest_export_targets(manifest.content)
+        if not targets:
+            continue
+        parent = posixpath.dirname(manifest_path.as_posix())
+        for raw_target in targets:
+            target = posixpath.normpath(posixpath.join(parent, raw_target.removeprefix("./")))
+            if target.startswith("../") or target.startswith("/"):
+                continue
+            target_path = RepositoryPath(PurePosixPath(target)) if target else RepositoryPath.root()
+            entrypoint = await services.index.get_file(generation_id, target_path)
+            if entrypoint is None or entrypoint.content is None:
+                continue
+            match = _public_export_match(entrypoint.content, name)
+            if match is None:
+                continue
+            start_line, end_line, matched = match
+            manifest_line = _line_for_fragment(manifest.content, raw_target)
+            public.append(
+                {
+                    "manifest": manifest_path.as_posix(),
+                    "manifest_line": manifest_line,
+                    "entrypoint": target,
+                    "matched": matched[:300],
+                    "start_line": start_line,
+                    "end_line": end_line,
+                }
+            )
+            evidence.append(
+                make_evidence(
+                    kind=EvidenceKind.FILE_EXCERPT,
+                    descriptor=descriptor,
+                    commit_sha=commit_sha,
+                    path=manifest_path,
+                    start_line=manifest_line,
+                    end_line=manifest_line,
+                    excerpt=f"package exports: {raw_target}",
+                    retrieval_method="index_export_manifest",
+                )
+            )
+            evidence.append(
+                make_evidence(
+                    kind=EvidenceKind.FILE_EXCERPT,
+                    descriptor=descriptor,
+                    commit_sha=commit_sha,
+                    path=target_path,
+                    start_line=start_line,
+                    end_line=max(start_line, end_line),
+                    excerpt=f"public export: {matched}",
+                    retrieval_method="index_export_public",
+                )
+            )
+            if len(public) >= _MAX_PUBLIC_MATCHES:
+                return tuple(public), tuple(evidence)
+    return tuple(public), tuple(evidence)
+
+
+async def _run_sync_search(
+    services: ToolServices,
+    generation_id: str,
+    pattern: str,
+) -> tuple[IndexTextHit, ...]:
+    """Search indexed text with a small helper that keeps the tool code readable."""
+    return await services.index.search_text(
+        generation_id,
+        pattern=pattern,
+        case_sensitive=True,
+        limit=_MAX_EXPORT_TARGETS,
+    )
 
 
 async def _symbol_paths(
@@ -198,6 +371,101 @@ def _reference_payload(
     if caller_symbol_name is not None:
         payload["caller_symbol_name"] = caller_symbol_name
     return payload
+
+
+async def find_exports(
+    services: ToolServices, context: ToolContext, arguments: FindExportsInput
+) -> ToolResult:
+    """Check exported symbols and export relations for a name or file."""
+    descriptor = resolve_repository(services, context, arguments.repository_id)
+    snapshot, generation_id = await require_snapshot(services, descriptor)
+    limit = clamp_limit(arguments.limit, 100)
+    path = parse_path(arguments.path, allow_root=False) if arguments.path is not None else None
+    path_prefix = arguments.path
+
+    symbols: tuple[IndexedSymbol, ...]
+    if arguments.name is not None:
+        symbols = await services.index.find_symbols(
+            generation_id,
+            build_symbol_query(
+                name=arguments.name,
+                qualified_name=None,
+                kinds=[],
+                path_prefix=path_prefix,
+                limit=limit * 3,
+            ),
+        )
+        if not symbols:
+            symbols = await services.index.find_symbols(
+                generation_id,
+                build_symbol_query(
+                    name=None,
+                    qualified_name=arguments.name,
+                    kinds=[],
+                    path_prefix=path_prefix,
+                    limit=limit * 3,
+                ),
+            )
+    else:
+        symbols = await services.index.list_symbols(generation_id, path=path, limit=limit * 5)
+    exported = tuple(symbol for symbol in symbols if symbol.exported)
+    relations = await services.index.find_relations_filtered(
+        generation_id,
+        relation_kinds=(RelationKind.EXPORT,),
+        raw_target=arguments.name,
+        path=path,
+        limit=limit,
+    )
+    paths = await _symbol_paths(services, generation_id, exported)
+    selected_symbols = tuple(symbol for symbol in exported if symbol.file_id in paths)
+    public_exports, public_evidence = await _public_export_evidence(
+        services,
+        descriptor,
+        snapshot.commit_sha,
+        generation_id,
+        arguments.name or "",
+    )
+    return ToolResult(
+        {
+            "repository_id": descriptor.repository_id.value,
+            "commit_sha": snapshot.commit_sha,
+            "name": arguments.name,
+            "path": path.as_posix() if path is not None else None,
+            "is_exported": bool(selected_symbols or relations),
+            "is_publicly_exported": bool(public_exports),
+            "exported_symbols": [
+                symbol_payload(symbol, paths[symbol.file_id]) for symbol in selected_symbols
+            ],
+            "export_relations": [relation_payload(relation) for relation in relations],
+            "public_exports": list(public_exports),
+            "count": len(selected_symbols) + len(relations) + len(public_exports),
+        },
+        evidence=(
+            *(
+                symbol_evidence(
+                    descriptor,
+                    snapshot.commit_sha,
+                    symbol,
+                    paths[symbol.file_id],
+                    retrieval_method="index_export_symbol",
+                    excerpt_prefix="exported declaration: ",
+                )
+                for symbol in selected_symbols
+            ),
+            *(
+                relation_evidence(
+                    descriptor,
+                    snapshot.commit_sha,
+                    relation,
+                    retrieval_method="index_export_relation",
+                    excerpt_prefix="export relation: ",
+                )
+                for relation in relations
+            ),
+            *public_evidence,
+        ),
+        truncated=len(exported) >= limit * 3 or len(relations) >= limit,
+    )
 
 
 async def find_references(

@@ -273,8 +273,8 @@ async def test_forum_post_is_converted_and_answered() -> None:
     assert interaction.locale == "ja"
     assert thread.typing_entered >= 1
     assert len(thread.sent) == 1
-    assert thread.sent[0].content.startswith("回答です。")
-    assert "**確信度**" in thread.sent[0].content
+    assert thread.sent[0].content == "回答です。"
+    assert "**確信度**" not in thread.sent[0].content
 
 
 async def test_starter_message_is_fetched_when_missing_from_cache() -> None:

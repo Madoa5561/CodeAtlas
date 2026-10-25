@@ -12,7 +12,7 @@
 | --- | --- |
 | catalog | `list_repositories`, `get_repository` |
 | refs/tree | `list_branches`, `list_tags`, `list_directory`, `read_file` |
-| search/symbol | `search_text`, `search_code`, `find_symbol`, `find_definition`, `find_references` |
+| search/symbol | `search_text`, `search_code`, `find_symbol`, `find_definition`, `find_exports`, `find_references` |
 | graph | `find_callers`, `find_callees`, `get_dependencies`, `get_dependents` |
 | git | `get_commit`, `search_commits`, `get_file_history`, `get_blame`, `compare_refs`, `get_diff` |
 | collaboration | `get_pull_request`, `get_pull_request_diff`, `list_issues` |

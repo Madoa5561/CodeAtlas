@@ -224,6 +224,21 @@ _REPOSITORY_KEYWORDS = (
     "リポジトリ一覧",
     "登録済みリポジトリ",
 )
+_EXPORT_KEYWORDS = (
+    "export",
+    "exports",
+    "exported",
+    "re-export",
+    "public api",
+    "entrypoint",
+    "entry point",
+    "エクスポート",
+    "再エクスポート",
+    "外部公開",
+    "公開されている",
+    "エントリポイント",
+    "エントリーポイント",
+)
 
 _ASCII_KEYWORD = re.compile(r"^[a-z0-9 ]+$")
 
@@ -407,6 +422,7 @@ class QuerySignals:
     wants_dependents: bool
     wants_blame: bool
     wants_repository_list: bool
+    wants_exports: bool
 
     @property
     def search_phrase(self) -> str:
@@ -446,6 +462,7 @@ class QuerySignals:
                 self.wants_dependents,
                 self.wants_blame,
                 self.wants_repository_list,
+                self.wants_exports,
             )
         )
 
@@ -482,6 +499,7 @@ def analyze(query: str) -> QuerySignals:
         wants_dependents=_matches_any(folded, _DEPENDENTS_KEYWORDS),
         wants_blame=_matches_any(folded, _BLAME_KEYWORDS),
         wants_repository_list=_matches_any(folded, _REPOSITORY_KEYWORDS),
+        wants_exports=_matches_any(folded, _EXPORT_KEYWORDS),
     )
 
 

@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from codeatlas.application.agent import HeuristicPlanner
@@ -61,3 +63,16 @@ async def test_planner_uses_domain_identifier_for_japanese_question() -> None:
     assert plan.steps[0].tool_name in {"find_definition", "search_code"}
     assert '"auth"' in plan.steps[0].arguments_json
     assert all("認証" not in step.arguments_json for step in plan.steps)
+
+
+@pytest.mark.asyncio
+async def test_planner_export_intent_uses_find_exports() -> None:
+    """Export questions schedule the dedicated export tool."""
+    catalog = build_tool_registry().definitions()
+    plan = await HeuristicPlanner().plan(
+        make_context("Client は外部に export されていますか？"), catalog, AgentLimits()
+    )
+
+    assert "find_exports" in [step.tool_name for step in plan.steps]
+    export_step = next(step for step in plan.steps if step.tool_name == "find_exports")
+    assert json.loads(export_step.arguments_json)["name"] == "Client"

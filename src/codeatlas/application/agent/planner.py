@@ -279,6 +279,8 @@ class HeuristicPlanner:
                 add(("find_definition", "find_symbol"))
             else:
                 add(("find_symbol", "find_definition"))
+        if signals.wants_exports:
+            add(("find_exports", "find_symbol"))
         if signals.wants_callers:
             add(("find_callers", "find_references"))
         if signals.wants_references:
@@ -330,6 +332,15 @@ class HeuristicPlanner:
                 purpose_ja="シンボル宣言と参照箇所を特定します。",
                 purpose_en="Locate the symbol declaration and related locations.",
                 name=name,
+                query=phrase,
+            )
+        if tool == "find_exports":
+            return _Draft(
+                tool=definition,
+                purpose_ja="シンボルのexportと公開APIを確認します。",
+                purpose_en="Verify the symbol export and public API surface.",
+                name=name,
+                path=file_path,
                 query=phrase,
             )
         if tool == "find_callees":

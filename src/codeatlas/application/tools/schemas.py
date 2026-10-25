@@ -156,6 +156,21 @@ class FindDefinitionInput(RepositoryScopedInput):
     limit: int = Field(default=20, ge=1, le=100)
 
 
+class FindExportsInput(RepositoryScopedInput):
+    """Check exported declarations and export relations for a symbol or file."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=512)
+    path: str | None = Field(default=None, min_length=1, max_length=4096)
+    limit: int = Field(default=20, ge=1, le=100)
+
+    @model_validator(mode="after")
+    def require_name_or_path(self) -> Self:
+        """Require a symbol name or file path so the query stays bounded."""
+        if self.name is None and self.path is None:
+            raise ValueError("name or path is required")
+        return self
+
+
 class FindReferencesInput(RepositoryScopedInput):
     """Find incoming parser-derived references to a target name."""
 
