@@ -2,7 +2,7 @@ name: codeatlas
 
 services:
   codeatlas:
-    image: ghcr.io/madoa5561/codeatlas:${CODEATLAS_IMAGE_TAG:-0.1.0}
+    image: ghcr.io/madoa5561/codeatlas:${CODEATLAS_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile

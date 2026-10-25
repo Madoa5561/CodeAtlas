@@ -9,6 +9,13 @@
 - M6: Qdrant、BM25/FTS、Hybrid Retrieval、GitHub App/Webhook、PR/Issue Tool、Web API
 - M7: Thrift parser、確定Call/Dependency Graph、複数Model Provider、MCP、VS Code拡張
 
+## [0.1.1] - 2026-10-25
+
+### Fixed
+
+- Composeのrelease image tagをGHCRで公開されるtagに合わせ、本番では`vX.Y.Z`へ固定する手順を明記した
+- Release workflowが`vX.Y.Z`に加えて`X.Y.Z`のcontainer tagも公開するよう修正した
+
 ## [0.1.0] - 2026-10-25
 
 ### Added

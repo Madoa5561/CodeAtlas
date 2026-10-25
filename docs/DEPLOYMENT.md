@@ -47,13 +47,15 @@ docker compose ps
 docker compose logs -f codeatlas
 ```
 
-release image を使う場合は build を省略できる。
+release image を使う場合は build を省略できる。versionを固定するため`CODEATLAS_IMAGE_TAG`へ明示tagを設定する。
 
 ```powershell
-$env:CODEATLAS_IMAGE_TAG="0.1.0"
+$env:CODEATLAS_IMAGE_TAG="v0.1.1"
 docker compose pull
 docker compose up -d codeatlas
 ```
+
+GHCR tagは`vX.Y.Z`、`X.Y.Z`、`latest`を公開する。本番では`latest`ではなく`vX.Y.Z`へ固定する。
 
 container は UID/GID 10001 の非rootで、`read_only`、`no-new-privileges`、`cap_drop: ALL`、`/tmp` tmpfs で動く。書き込み可能なのは `codeatlas-data` volume（`/app/data`）だけである。
 

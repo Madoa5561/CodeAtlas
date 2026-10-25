@@ -10,7 +10,7 @@
 ## Decision
 
 1. `0.1.0`はM4（Agent + Ollama）とM5（Discord Forum）までの完成を対象とし、M6（GitHub/Webhook/Qdrant/Hybrid Retrieval）とM7を明示的に除外する。README/CHANGELOGに未実装を明記する。
-2. 配布はPyPI公開ではなく、GitHub Releaseのsdist/wheelとGHCR container image（`ghcr.io/<owner>/codeatlas:0.1.0`）とする。tag `v0.1.0`をpushすると`.github/workflows/release.yml`がquality gate、build、image publish、release asset添付を行う。
+2. 配布はPyPI公開ではなく、GitHub Releaseのsdist/wheelとGHCR container image（`ghcr.io/<owner>/codeatlas:vX.Y.Z`、`X.Y.Z`、`latest`）とする。tag `vX.Y.Z`をpushすると`.github/workflows/release.yml`がquality gate、build、image publish、release asset添付を行う。本番deployは`vX.Y.Z`へ固定する。
 3. 実行構成は単一`codeatlas` container + host上のOllamaとする。Composeでは`host.docker.internal`（Linuxは`host-gateway`）でOllamaへ接続し、Discord token等はenvironment/secretから注入する。`qdrant` profileはM6準備として残すが0.1.0では接続しない。
 4. repositoryは`CODEATLAS_REPOSITORY__REGISTERED_PATHS`で明示承認されたlocal directoryのみを登録し、containerへはread-only mountする。startup時にschemaを検証し、migrationは`codeatlas-admin db upgrade`で明示実行する。
 5. secretは`.env`を配布せず、deployment環境のsecret機能から渡す。Discord token、Ollama URL、repository pathをlogやrelease noteへ含めない。
